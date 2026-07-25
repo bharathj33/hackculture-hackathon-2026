@@ -1,113 +1,71 @@
-# StoryCritic — UI & Functionality Spec
+# StoryCritic — Feature & Functionality Spec (UI open)
 
-Hand this to a designer/Claude session to design or rebuild the UI. Backend contract is frozen; everything here is implemented and running.
+Hand this to a designer/Claude session. **The screen structure, layout, and flow are yours to invent** — this doc defines what the product does, what data exists, and what must hold true. A 4-step wizard exists today as a reference implementation (`frontend/`), but do not treat it as the required shape.
 
-## Product in one line
+## Product
 
-Internal tool for Pocket FM's editorial team: upload a story (script / transcript / audio / video), pick a simulated audience panel, and get a **market's verdict** — score /10, predicted drop-off curve, per-segment scores, prioritized fixes — plus the ability to *chat with the simulated listeners* about why they quit.
+Internal tool for Pocket FM's editorial team: submit a story in any form (script / transcript / audio / video), choose a simulated audience, and receive **the market's verdict** — a score out of 10, predicted listener drop-off across the story, per-audience-segment scores, pros/cons, and prioritized fixes — then **interrogate the simulated listeners** about their reactions.
 
 **Brand voice:** "The market's opinion, not a critic's."
-**Hard principle (must appear in UI):** "Validates content, never the creator." No writer names, no author fields, no creator history anywhere.
+**Non-negotiable principle (must be felt in the UI):** *Validates content, never the creator.* No writer names, author fields, or creator history exist anywhere in the product. If a design needs an author field, the design is wrong.
 
-## Users & context
+## Who uses it, where
 
-- Primary user: editorial reviewer triaging a submission queue. Wants a defensible greenlight/fix/reject signal in minutes.
-- Demo context: 5-minute hackathon pitch on a laptop + projector. Dark theme, big numbers, readable from distance.
-- Single user, no auth, no accounts.
+- Editorial reviewer triaging a submission funnel; needs a defensible greenlight / fix-and-resubmit / reject signal in minutes, with evidence they can show in a meeting.
+- Demo context: 5-minute hackathon pitch, laptop + projector, dark room. Key numbers must read from distance. Desktop only. Single user, no auth.
 
-## Information architecture
+## Capabilities (what the user can do)
 
-Single-page wizard, 4 steps + overlay drawer:
+1. **Submit a story** — paste text, or upload .txt/.md/.pdf/.mp3/.wav/.m4a/.mp4. System normalizes everything into a **Story Representation**: sequential beats with summaries, episode numbers, and detected HOOK / CLIFFHANGER flags, plus characters and language. Showing this back to the user is powerful — it proves the system *understood* the story. Hindi (Devanagari) content is normal.
+2. **Cast an audience** — choose who judges. Preset panels exist (e.g. "Tier-2 Hindi romance binge-listener", "US thriller commuter") each with persona count, market, language, genre affinities, listening habits. This choice is a core differentiator — it should feel like casting an audience, not editing config. (Custom panel building = stretch, API supports saving.)
+3. **Run a simulation** — two depths: **Triage** (~10–30s, quick pass) and **Full** (swarm simulation, minutes; server auto-degrades to triage on failure). Optional **backtest** flag frames a run against published content. Waiting is real — design for it (the personas genuinely exist; theatrical progress is legitimate).
+4. **Read the verdict** — the money moment. Available data:
+   - score /10 + short rationale (suggested meaning bands: <5 rework, 5–7 fixable, >7 greenlight)
+   - **drop-off prediction**: retention % per story beat, with flagged cliffs (each has a cause) and **paywall-risk** markers (cliffs in episodes 1–10 cost revenue, not just attention — Pocket FM's coin economy converts on early episodes)
+   - **segment scores**: per audience group with sample sizes ("romance fans 8.0 (n=12), thriller fans 4.2 (n=8)") — this is the "market's opinion" made visible
+   - pros and cons, each traceable to named personas ("Amit-L07")
+   - prioritized fixes with estimated impact ("+1.0 score with romance segment")
+   - a **confidence note** — forecast-not-ground-truth disclaimer. Must always be visible; honesty is a feature, not fine print.
+5. **Interrogate the audience** — converse with any individual persona (they answer in character, grounded in their simulated experience; each knows where/why it dropped off or that it finished) or with a **report agent** for aggregate questions ("what single change lifts the thriller segment most?").
+6. **Export** — one-click writer-facing feedback packet (markdown download; contains no internal/cost data).
+7. **Start over** — new story, fresh run, no residue.
 
-```
-[1 Upload] → [2 Panel] → [3 Simulate] → [4 Verdict]
-                                          └── Chat drawer (overlay)
-```
-
-Stepper always visible top-right; completed steps green, active step highlighted.
-
----
-
-## Screen 1 — Upload
-
-**Purpose:** get any story format in; show the system *understood* the story.
-
-- Two tabs: **Upload file** (drag-drop zone; .txt .md .pdf .mp3 .wav .m4a .mp4) and **Paste text** (textarea).
-- Submit → processing state: spinner + "Extracting beats, hooks and cliffhangers…" (text) / "Transcribing audio…" (audio/video, takes longer).
-- **Success state = beats preview** (the first "wow"): list of extracted beats — `#idx · Ep N`, one-line summary, badges `HOOK` (green) and `CLIFFHANGER` (red/amber). Header: "Story ingested — N beats · language: hi".
-- Actions: **Start over** · **Choose audience panel →**
-- Errors: parse/transcription failure → message + retry. Empty input blocks submit.
-
-## Screen 2 — Panel
-
-**Purpose:** creator picks *who* judges. This is a core differentiator — make it feel like casting an audience, not picking a config.
-
-- Grid of **preset panel cards**: name (e.g. "Tier-2 Hindi romance binge-listener"), `PRESET` badge, persona count, market (IN/US), language, genre chips. Selected card gets accent border.
-- Mode toggle: **Full** (swarm simulation, minutes) vs **Triage** (quick pass, ~30s). Default Full; demo uses Triage live.
-- **Backtest** checkbox (runs against published content for credibility framing).
-- Optional (stretch, not built): custom panel builder — demographics, genres, habits, persona count slider.
-- Actions: **← Back** · **Simulate** (disabled until panel selected).
-
-## Screen 3 — Simulate (running)
-
-**Purpose:** hold attention during the wait; suggest the swarm working.
-
-- Status pill: queued → running. Poll every 3s, 10-min cap → timeout error + Retry / Back.
-- Nice-to-have: rotating status lines ("Panel is listening to episode 1…", "Neha-L08 reached the cliffhanger…") — theatrical, personas are real.
-- Ghost "← Back to panels" always available.
-- Failure → error box + Retry (re-creates run) + Back. Note: full mode auto-falls back to triage server-side; UI just sees a completed run.
-
-## Screen 4 — Verdict (the money screen)
-
-Layout top to bottom:
-
-1. **Hero score**: huge N.N/10, color-coded — red <5 ("Needs rework"), amber 5–7 ("Fixable"), green >7 ("Greenlight material") — with verdict label + 2-3 sentence rationale. Right rail buttons: **Ask the audience** (opens chat drawer) · **Export report** (downloads markdown) · **New story**.
-2. **"Where listeners drop off"** — line chart, retention % (y, 0-100%) vs story beat (x). Red dots = cliffs (tooltip shows cause). Amber ring + "PW" label = paywall-conversion risk (cliffs in episodes 1–10 cost money, not just retention). Legend below.
-3. **Segment scores** — horizontal bars per audience group ("Daily Commute Listeners 9.0", "Binge Listeners 8.0") with n= counts. This sells "market's opinion, not a critic's".
-4. **Pros / Cons** — two columns; each item traceable (may carry persona_refs like "Amit-L07").
-5. **Priority fixes** — numbered list, each with estimated impact ("+1.0 score with romance segment").
-6. **Confidence footer** (muted, always present): forecast-not-ground-truth disclaimer. Never hide this — honesty is a feature.
-
-## Chat drawer (overlay from Verdict)
-
-**Purpose:** the demo "wow" — interrogate the audience.
-
-- Left rail: persona list — name/group label + badge "dropped @ beat N" (red) or "finished" (green); plus **Report Agent** entry ("Ask about the verdict").
-- Right: per-persona message thread. Editor asks ("why did you stop at beat 3?"), persona answers in character, grounded in its simulation event log.
-- Input: Enter sends (IME-safe), Send button, disabled while awaiting reply.
-
----
-
-## API contract (frozen — localhost:8000, proxy /api)
+## Data & API (frozen — localhost:8000, dev proxy `/api`)
 
 | Call | Returns |
 |---|---|
-| `POST /api/ingest/text {text}` / `POST /api/ingest/file` (multipart) | Submission `{id, status, story_rep}` |
-| `GET /api/ingest/{id}` | poll until `status: ready` — `story_rep.beats[]: {idx, summary, episode, is_hook, is_cliffhanger}`, `characters[]`, `language` |
+| `POST /api/ingest/text {text}` · `POST /api/ingest/file` (multipart) | Submission `{id, status, story_rep}` |
+| `GET /api/ingest/{id}` | poll to `ready` — `story_rep.beats[]: {idx, summary, episode, is_hook, is_cliffhanger}`, `characters[]`, `language` |
 | `GET /api/panels` | `[{id, name, is_preset, config: {persona_count, market, language, genre_affinities[], habits[]}}]` |
 | `POST /api/runs {submission_id, panel_id, mode: full\|triage, backtest}` | Run `{id, status}` |
-| `GET /api/runs/{id}` | poll until `done`/`failed`; has `cost_tokens` |
+| `GET /api/runs/{id}` | poll to `done`/`failed`; includes `cost_tokens` |
 | `GET /api/runs/{id}/report` | `{score, rationale, pros[{text, persona_refs[]}], cons[…], dropoff[{beat_idx, retained_pct, cliff, cause, paywall_risk}], segments[{group, score, n}], fixes[{priority, text, est_delta}], confidence_note}` |
 | `GET /api/runs/{id}/personas` | `[{id, group_label, profile, dropped_at_beat}]` |
-| `POST /api/runs/{id}/chat {message, persona_id?}` | `{role, content}` — persona_id null = report agent |
-| `GET /api/runs/{id}/chat` | history |
-| `GET /api/runs/{id}/report/export` | markdown feedback packet (download) |
+| `POST /api/runs/{id}/chat {message, persona_id?}` | `{role, content}` — `persona_id: null` = report agent |
+| `GET /api/runs/{id}/chat` | thread history |
+| `GET /api/runs/{id}/report/export` | markdown (trigger download) |
 
-Timing expectations: ingest text ~8–15s, audio ~30–90s; triage run ~10–30s; full run = minutes (poll patiently).
+Timing: text ingest 8–15s · audio 30–90s · triage 10–30s · full = minutes. All long operations are poll-based — design the waits.
 
-## States every screen must handle
+## Truths the design must respect
 
-processing / ready / failed on ingest · queued / running / done / failed on runs · fetch errors with retry · 10-min poll timeout · empty states. Global ErrorBoundary (crash → message + reload, never white screen).
+- Every async state is real and must be handled: processing/ready/failed, queued/running/done/failed, fetch errors, long-poll timeouts, empty states. Never white-screen (crash → recoverable message).
+- The drop-off curve is the single most information-dense artifact — whatever form it takes (chart, timeline, strip, annotated beats), cliff causes and paywall-risk must survive a projector.
+- Persona names/quotes recur across verdict, pros/cons, and chat — treat personas as first-class characters of the product, not metadata.
+- Confidence note always visible with the verdict.
+- The principle line ("Validates content, never the creator.") should live somewhere persistent.
+- Dark, projector-legible; Devanagari + Latin mixed text; color carries meaning only (score bands, cliffs, hooks).
 
-## Design directives
+## Design direction (owner preference)
 
-- Dark theme, projector-legible; hero score readable from 5m.
-- Hindi text (Devanagari) appears in beats/quotes — pick fonts accordingly.
-- Color system: accent indigo/violet; success green, warn amber, danger red used ONLY for meaning (score bands, cliffs, badges).
-- Charts: no chartjunk; the drop-off curve is the single most important visual — cliff annotations must survive projection.
-- Footer on every screen: "Validates content, never the creator."
-- Nothing anywhere asks for or displays a writer's name. If a design idea needs an author field, the idea is wrong.
+**Dashboard-style, not wizard-style.** Think editorial command center / analytics console rather than a step-by-step form:
+
+- Verdict data as a dashboard: hero score tile, drop-off chart panel, segment-score tiles, fixes list, persona rail — dense, glanceable, panel-based layout.
+- Submission + panel selection can be compact controls (side rail, top bar, or modal) feeding the dashboard rather than full-screen steps.
+- Multiple runs/stories visible or switchable is welcome (run history exists in the API via ids; a recent-runs rail is fair game).
+- Reference aesthetics: Databricks/Grafana-class analytics surfaces, dark, KPI tiles + charts — but with the product's editorial personality (personas as characters, story beats as narrative objects, not just rows).
+- Everything else above (states, truths, principle line) still applies.
 
 ## Out of scope
 
-Auth/accounts, writer-facing views, per-writer history, mobile layout (desktop demo only), custom panel builder (stretch).
+Auth/accounts · writer-facing surfaces · per-writer anything · mobile · realtime collaboration.
