@@ -18,9 +18,11 @@ export default function Upload({ onReady }: Props) {
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<number | null>(null);
+  const unmountedRef = useRef(false);
 
   useEffect(() => {
     return () => {
+      unmountedRef.current = true;
       if (pollRef.current !== null) window.clearTimeout(pollRef.current);
     };
   }, []);
@@ -29,6 +31,7 @@ export default function Upload({ onReady }: Props) {
     const tick = async () => {
       try {
         const sub = await api.getSubmission(id);
+        if (unmountedRef.current) return; // in-flight response after unmount
         if (sub.status === 'ready') {
           setSubmission(sub);
           setPhase('ready');
@@ -42,6 +45,7 @@ export default function Upload({ onReady }: Props) {
         setSubmission(sub);
         pollRef.current = window.setTimeout(tick, 2000);
       } catch (err) {
+        if (unmountedRef.current) return;
         setError(err instanceof Error ? err.message : String(err));
         setPhase('error');
       }
@@ -152,6 +156,12 @@ export default function Upload({ onReady }: Props) {
           }}
           onClick={() => {
             if (!busy) fileInputRef.current?.click();
+          }}
+          onKeyDown={(e) => {
+            if (!busy && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
           }}
           role="button"
           tabIndex={0}

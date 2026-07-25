@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as api from '../api';
 import type { Panel, RunMode, Submission } from '../types';
 
@@ -21,16 +21,30 @@ export default function PanelSelect({ submission, onSimulate, onBack }: Props) {
   const [mode, setMode] = useState<RunMode>('full');
   const [backtest, setBacktest] = useState(false);
 
+  const loadSeq = useRef(0); // latest-wins guard: stale responses are dropped
+
   const load = () => {
+    const seq = ++loadSeq.current;
     setError(null);
     setPanels(null);
     api
       .getPanels()
-      .then(setPanels)
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)));
+      .then((p) => {
+        if (seq === loadSeq.current) setPanels(p);
+      })
+      .catch((err) => {
+        if (seq === loadSeq.current)
+          setError(err instanceof Error ? err.message : String(err));
+      });
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    return () => {
+      loadSeq.current++; // invalidate in-flight request on unmount
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const beatCount = submission.story_rep?.beats?.length ?? 0;
 

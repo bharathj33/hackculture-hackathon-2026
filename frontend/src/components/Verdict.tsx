@@ -38,7 +38,8 @@ export default function Verdict({ report, runId, personaCount, onOpenChat, onRes
       a.href = url;
       a.download = 'storycritic-report.md';
       a.click();
-      URL.revokeObjectURL(url);
+      // Defer revoke: a synchronous revoke can cancel the download in Firefox.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : String(err));
     } finally {

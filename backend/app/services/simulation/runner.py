@@ -124,7 +124,10 @@ def _run_full(db, run: Run, sub: Submission, panel: Panel) -> None:
     Fallback if MiroFish frame distorts: direct OASIS/CAMEL persona loop.
     """
     mf = MiroFishClient()
-    sim = mf.simulate(story_rep=sub.story_rep, panel_config=panel.config)
+    try:
+        sim = mf.simulate(story_rep=sub.story_rep, panel_config=panel.config)
+    finally:
+        mf.http.close()  # per-run client; don't leak sockets across runs
 
     # Persist personas + event logs for chat/traceability (F5, NFR-3)
     for p in sim["personas"]:

@@ -14,7 +14,7 @@ export interface StoryRep {
 
 export interface Submission {
   id: string;
-  status: string; // 'processing' | 'ready' | 'failed' | ...
+  status: 'processing' | 'ready' | 'failed' | 'error';
   story_rep: StoryRep | null;
 }
 
@@ -37,7 +37,7 @@ export type RunMode = 'full' | 'triage';
 
 export interface Run {
   id: string;
-  status: string; // 'queued' | 'running' | 'done' | 'failed'
+  status: 'queued' | 'running' | 'done' | 'failed';
 }
 
 export interface DropoffPoint {

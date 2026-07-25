@@ -124,10 +124,10 @@ export default function ChatDrawer({ runId, personas, open, initialPersonaId, on
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return; // ignore IME confirm
                 if (e.key === 'Enter') void send();
               }}
               placeholder={`Message ${title}…`}
-              disabled={sending}
             />
             <button className="btn btn-primary" onClick={() => void send()} disabled={sending || !input.trim()}>
               Send
