@@ -21,6 +21,7 @@ export default function Upload({ onReady }: Props) {
   const unmountedRef = useRef(false);
 
   useEffect(() => {
+    unmountedRef.current = false; // reset on (re)mount — StrictMode runs cleanup then re-runs effect
     return () => {
       unmountedRef.current = true;
       if (pollRef.current !== null) window.clearTimeout(pollRef.current);
