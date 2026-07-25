@@ -1,15 +1,17 @@
-"""StoryCritic backend — FastAPI app factory, preset seeding, TTL purge."""
+"""StoryCritic backend — FastAPI app factory, preset/editor seeding, TTL purge."""
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI
+import bcrypt
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth import require_editor
 from app.config import get_settings
 from app.db import SessionLocal, init_db
-from app.models import Panel, Submission
-from app.routers import chat, ingest, panels, runs
+from app.models import Editor, Panel, Submission
+from app.routers import auth, chat, ingest, panels, runs
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,6 +31,33 @@ def seed_presets() -> None:
             for name, config in PRESET_PANELS:
                 db.add(Panel(name=name, config=config, is_preset=True))
             db.commit()
+    finally:
+        db.close()
+
+
+def seed_editors() -> None:
+    """Upsert editor accounts from AUTH_USERS ("user1:pass1,user2:pass2").
+
+    Plaintext passwords exist only in the env var — bcrypt-hashed here at boot.
+    Re-hashing existing users on every start doubles as password rotation.
+    Content-not-creator: editors gate access, they are never linked to content.
+    """
+    spec = get_settings().auth_users
+    if not spec:
+        return
+    db = SessionLocal()
+    try:
+        for pair in spec.split(","):
+            username, _, password = pair.strip().partition(":")
+            if not username or not password:
+                continue
+            hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+            editor = db.query(Editor).filter(Editor.username == username).first()
+            if editor:
+                editor.password_hash = hashed
+            else:
+                db.add(Editor(username=username, password_hash=hashed))
+        db.commit()
     finally:
         db.close()
 
@@ -54,15 +83,24 @@ def purge_expired_content() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # H-1 guard: never fail open. Accounts configured but no signing secret means
+    # someone intended auth — refuse to boot rather than serve a public API.
+    s = get_settings()
+    if s.auth_users and not s.jwt_secret:
+        raise RuntimeError("AUTH_USERS is set but JWT_SECRET is empty — refusing to start fail-open")
     init_db()
     seed_presets()
+    seed_editors()
     purge_expired_content()  # also run on each startup; cron/loop later if needed
     yield
 
 
 app = FastAPI(
-    title="StoryCritic",
-    description="Audience-swarm content critique — validates content, never the creator.",
+    title="StoryCritic — Team AIPlayers",
+    description=(
+        "Audience-swarm content critique — validates content, never the creator. "
+        "Built for Pocket FM's 'Zero to One' Generative Media Hackathon by Team AIPlayers."
+    ),
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -92,10 +130,14 @@ async def periodic_purge(request, call_next):
 
 _last_purge = 0.0
 
-app.include_router(ingest.router)
-app.include_router(panels.router)
-app.include_router(runs.router)
-app.include_router(chat.router)
+# Editor JWT gate for public hosting (empty JWT_SECRET = open, local dev).
+# Auth router and /health stay open; everything content-facing requires a token.
+_editor_gate = [Depends(require_editor)]
+app.include_router(auth.router)
+app.include_router(ingest.router, dependencies=_editor_gate)
+app.include_router(panels.router, dependencies=_editor_gate)
+app.include_router(runs.router, dependencies=_editor_gate)
+app.include_router(chat.router, dependencies=_editor_gate)
 
 
 @app.get("/health")

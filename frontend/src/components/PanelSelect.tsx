@@ -6,6 +6,7 @@ interface Props {
   submission: Submission;
   onSimulate: (panel: Panel, mode: RunMode, backtest: boolean) => void;
   onBack: () => void;
+  onUnauthorized: () => void;
 }
 
 function genreList(g: unknown): string[] {
@@ -14,7 +15,7 @@ function genreList(g: unknown): string[] {
   return [];
 }
 
-export default function PanelSelect({ submission, onSimulate, onBack }: Props) {
+export default function PanelSelect({ submission, onSimulate, onBack, onUnauthorized }: Props) {
   const [panels, setPanels] = useState<Panel[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Panel | null>(null);
@@ -33,8 +34,12 @@ export default function PanelSelect({ submission, onSimulate, onBack }: Props) {
         if (seq === loadSeq.current) setPanels(p);
       })
       .catch((err) => {
-        if (seq === loadSeq.current)
-          setError(err instanceof Error ? err.message : String(err));
+        if (seq !== loadSeq.current) return;
+        if (err instanceof api.UnauthorizedError) {
+          onUnauthorized();
+          return;
+        }
+        setError(err instanceof Error ? err.message : String(err));
       });
   };
 

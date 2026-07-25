@@ -9,6 +9,7 @@ interface Props {
   personaCount: number;
   onOpenChat: () => void;
   onRestart: () => void;
+  onUnauthorized: () => void;
 }
 
 function verdictClass(score: number): string {
@@ -23,7 +24,14 @@ function verdictWord(score: number): string {
   return 'Greenlight material';
 }
 
-export default function Verdict({ report, runId, personaCount, onOpenChat, onRestart }: Props) {
+export default function Verdict({
+  report,
+  runId,
+  personaCount,
+  onOpenChat,
+  onRestart,
+  onUnauthorized,
+}: Props) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -41,6 +49,10 @@ export default function Verdict({ report, runId, personaCount, onOpenChat, onRes
       // Defer revoke: a synchronous revoke can cancel the download in Firefox.
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
+      if (err instanceof api.UnauthorizedError) {
+        onUnauthorized();
+        return;
+      }
       setExportError(err instanceof Error ? err.message : String(err));
     } finally {
       setExporting(false);

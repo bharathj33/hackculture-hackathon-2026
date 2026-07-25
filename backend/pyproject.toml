@@ -9,9 +9,11 @@ dependencies = [
     "sqlalchemy>=2.0",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
-    "python-multipart>=0.0.9",   # file uploads
-    "httpx>=0.27",               # MiroFish/ElevenLabs/OpenAI HTTP calls
+    "python-multipart>=0.0.9", # file uploads
+    "httpx>=0.27", # MiroFish/ElevenLabs/OpenAI HTTP calls
     "openai>=1.35",
+    "pyjwt>=2.8",
+    "bcrypt>=4.0",
 ]
 
 [project.optional-dependencies]

@@ -102,8 +102,27 @@ def test_validation_errors(client):
 
 
 def test_no_author_columns():
-    """Content-not-creator: structural audit (NFR-7)."""
+    """Content-not-creator: structural audit (NFR-7).
+
+    `editors` (staff login, its `username`) is excluded by design: it is the
+    auth table, holds no FK to content, and no content table references it —
+    the audit covers every table that touches submissions/judgment.
+    """
     from app import models
 
-    cols = [c.name for t in models.Base.metadata.tables.values() for c in t.columns]
+    cols = [
+        c.name
+        for t in models.Base.metadata.tables.values()
+        if t.name != "editors"
+        for c in t.columns
+    ]
     assert not [x for x in cols if "author" in x or "writer" in x or "user" in x]
+    # editors must stay an island: no FKs in either direction
+    editors = models.Base.metadata.tables["editors"]
+    assert not editors.foreign_keys
+    assert not [
+        fk
+        for t in models.Base.metadata.tables.values()
+        for fk in t.foreign_keys
+        if fk.column.table.name == "editors"
+    ]

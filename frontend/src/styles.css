@@ -970,6 +970,28 @@ button {
   border-color: var(--accent);
 }
 
+/* Login */
+.login input {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+}
+
+.login input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.signout {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.8rem;
+}
+
 /* Footer */
 .app-footer {
   margin-top: 3rem;

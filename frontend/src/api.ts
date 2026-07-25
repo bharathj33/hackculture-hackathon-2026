@@ -10,8 +10,47 @@ import type {
 
 const BASE = '/api';
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, init);
+// Public-hosting auth: JWT from /api/auth/login, stored per-session.
+const TOKEN_KEY = 'storycritic_jwt';
+
+export function getToken(): string {
+  return sessionStorage.getItem(TOKEN_KEY) ?? '';
+}
+
+export function setToken(token: string): void {
+  sessionStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+export class UnauthorizedError extends Error {
+  constructor() {
+    super('authentication required');
+    this.name = 'UnauthorizedError';
+  }
+}
+
+function withAuth(init?: RequestInit): RequestInit {
+  const token = getToken();
+  if (!token) return init ?? {};
+  return {
+    ...init,
+    headers: {
+      ...(init?.headers as Record<string, string> | undefined),
+      Authorization: `Bearer ${token}`,
+    },
+  };
+}
+
+/** Shared fetch + auth/error handling; returns the raw Response on success. */
+async function rawRequest(path: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(`${BASE}${path}`, withAuth(init));
+  if (res.status === 401) {
+    clearToken();
+    throw new UnauthorizedError();
+  }
   if (!res.ok) {
     let detail = '';
     try {
@@ -21,6 +60,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new Error(`API ${res.status} ${res.statusText}${detail ? ` — ${detail.slice(0, 300)}` : ''}`);
   }
+  return res;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await rawRequest(path, init);
   return res.json() as Promise<T>;
 }
 
@@ -91,7 +135,21 @@ export function sendChat(
 }
 
 export async function exportReport(runId: string): Promise<string> {
-  const res = await fetch(`${BASE}/runs/${runId}/report/export`);
-  if (!res.ok) throw new Error(`Export failed: ${res.status} ${res.statusText}`);
+  const res = await rawRequest(`/runs/${runId}/report/export`);
   return res.text();
+}
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
+/** Exchange credentials for a JWT and store it. Throws UnauthorizedError on 401. */
+export async function login(username: string, password: string): Promise<void> {
+  const res = await fetch(`${BASE}/auth/login`, jsonInit('POST', { username, password }));
+  if (res.status === 401) throw new UnauthorizedError();
+  if (!res.ok) throw new Error(`Login failed: ${res.status} ${res.statusText}`);
+  const data = (await res.json()) as LoginResponse;
+  setToken(data.access_token);
 }

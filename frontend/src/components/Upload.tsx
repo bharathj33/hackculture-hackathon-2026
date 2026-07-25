@@ -7,9 +7,10 @@ type Phase = 'idle' | 'submitting' | 'processing' | 'ready' | 'error';
 
 interface Props {
   onReady: (submission: Submission) => void;
+  onUnauthorized: () => void;
 }
 
-export default function Upload({ onReady }: Props) {
+export default function Upload({ onReady, onUnauthorized }: Props) {
   const [tab, setTab] = useState<Tab>('file');
   const [text, setText] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
@@ -47,12 +48,16 @@ export default function Upload({ onReady }: Props) {
         pollRef.current = window.setTimeout(tick, 2000);
       } catch (err) {
         if (unmountedRef.current) return;
+        if (err instanceof api.UnauthorizedError) {
+          onUnauthorized();
+          return;
+        }
         setError(err instanceof Error ? err.message : String(err));
         setPhase('error');
       }
     };
     void tick();
-  }, []);
+  }, [onUnauthorized]);
 
   const submit = useCallback(
     async (promise: Promise<Submission>) => {
@@ -69,11 +74,15 @@ export default function Upload({ onReady }: Props) {
           poll(sub.id);
         }
       } catch (err) {
+        if (err instanceof api.UnauthorizedError) {
+          onUnauthorized();
+          return;
+        }
         setError(err instanceof Error ? err.message : String(err));
         setPhase('error');
       }
     },
-    [poll],
+    [poll, onUnauthorized],
   );
 
   const handleFile = useCallback(

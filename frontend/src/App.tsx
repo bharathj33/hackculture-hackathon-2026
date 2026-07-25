@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as api from './api';
+import Login from './components/Login';
 import ChatDrawer from './components/ChatDrawer';
 import PanelSelect from './components/PanelSelect';
 import Running from './components/Running';
@@ -17,6 +18,8 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 export default function App() {
+  // null = probing whether the API is gated; true = unlocked; false = show gate
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const [step, setStep] = useState<Step>('upload');
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -34,6 +37,12 @@ export default function App() {
     setStep('panel');
   }, []);
 
+  // M-2: a mid-session 401 (expired/cleared token) routes back to the login
+  // screen instead of dead-ending in a generic error box.
+  const handleUnauthorized = useCallback(() => {
+    setUnlocked(false);
+  }, []);
+
   const startRun = useCallback(
     async (selPanel: Panel, selMode: RunMode, selBacktest: boolean) => {
       if (!submission) return;
@@ -47,6 +56,10 @@ export default function App() {
         const r = await api.createRun(submission.id, selPanel.id, selMode, selBacktest);
         setRun(r);
       } catch (err) {
+        if (err instanceof api.UnauthorizedError) {
+          setUnlocked(false);
+          return;
+        }
         setRun(null);
         setRunError(err instanceof Error ? err.message : String(err));
       }
@@ -70,6 +83,10 @@ export default function App() {
       setPersonas(pers);
       setStep('verdict');
     } catch (err) {
+      if (err instanceof api.UnauthorizedError) {
+        setUnlocked(false);
+        return;
+      }
       setRunError(
         `Report fetch failed: ${err instanceof Error ? err.message : String(err)}`,
       );
@@ -101,7 +118,47 @@ export default function App() {
     setChatOpen(true);
   }, []);
 
+  const signOut = useCallback(() => {
+    api.clearToken();
+    setUnlocked(false);
+  }, []);
+
+  useEffect(() => {
+    // Probe: if API answers without a token (auth off) or stored token works → unlocked.
+    let cancelled = false;
+    api
+      .getPanels()
+      .then(() => !cancelled && setUnlocked(true))
+      .catch((err) => {
+        if (cancelled) return;
+        setUnlocked(err instanceof api.UnauthorizedError ? false : true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const stepIdx = STEPS.findIndex((s) => s.key === step);
+
+  if (unlocked === false) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <div className="brand">
+            <h1>StoryCritic</h1>
+            <p className="tagline">The market&rsquo;s opinion, not a critic&rsquo;s.</p>
+          </div>
+        </header>
+        <main className="app-main">
+          <Login onSuccess={() => setUnlocked(true)} />
+        </main>
+        <footer className="app-footer">
+          Validates content, never the creator. · Zero to One Generative Media Hackathon · Team
+          AIPlayers
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -121,13 +178,25 @@ export default function App() {
             </div>
           ))}
         </nav>
+        {unlocked === true && api.getToken() && (
+          <button className="btn btn-ghost signout" onClick={signOut}>
+            Sign out
+          </button>
+        )}
       </header>
 
       <main className="app-main">
-        {step === 'upload' && <Upload onReady={handleReady} />}
+        {step === 'upload' && (
+          <Upload onReady={handleReady} onUnauthorized={handleUnauthorized} />
+        )}
 
         {step === 'panel' && submission && (
-          <PanelSelect submission={submission} onSimulate={startRun} onBack={restart} />
+          <PanelSelect
+            submission={submission}
+            onSimulate={startRun}
+            onBack={restart}
+            onUnauthorized={handleUnauthorized}
+          />
         )}
 
         {step === 'running' && (
@@ -138,6 +207,7 @@ export default function App() {
             onFailed={handleRunFailed}
             onRetry={retryRun}
             onBack={backToPanel}
+            onUnauthorized={handleUnauthorized}
           />
         )}
 
@@ -148,6 +218,7 @@ export default function App() {
             personaCount={personas.length}
             onOpenChat={() => openChat(null)}
             onRestart={restart}
+            onUnauthorized={handleUnauthorized}
           />
         )}
       </main>
@@ -159,10 +230,14 @@ export default function App() {
           open={chatOpen}
           initialPersonaId={chatPersona}
           onClose={() => setChatOpen(false)}
+          onUnauthorized={handleUnauthorized}
         />
       )}
 
-      <footer className="app-footer">Validates content, never the creator.</footer>
+      <footer className="app-footer">
+        Validates content, never the creator. · Zero to One Generative Media Hackathon · Team
+        AIPlayers
+      </footer>
     </div>
   );
 }

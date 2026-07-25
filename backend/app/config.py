@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./storycritic.db"
     content_ttl_minutes: int = 120  # NFR-7: session-scoped raw content
     demo_mock: bool = False  # keyless E2E rehearsal: deterministic story-rep + canned verdict
+    # Editor JWT auth (public hosting). Empty jwt_secret (default) = auth DISABLED —
+    # local dev and tests run fully open; set a strong secret in production.
+    jwt_secret: str = ""
+    jwt_expiry_hours: int = 12
+    # Editor accounts seeded at startup: "user1:plainpass1,user2:pass2".
+    # Passwords are bcrypt-hashed on boot — plaintext never touches the DB.
+    auth_users: str = ""
 
 
 @lru_cache

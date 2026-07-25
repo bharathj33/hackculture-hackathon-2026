@@ -1,7 +1,10 @@
 """Database schema.
 
 NFR-7 (content-not-creator, mechanically auditable):
-- NO author/writer/user identifier column exists in ANY table.
+- NO author/writer/user identifier column exists in ANY content table
+  (submissions/runs/reports/personas/chat_messages). `editors` is the sole
+  exception: it holds editorial-staff login credentials only and has NO foreign
+  key to (or from) any content table — editor identity never touches judgment.
 - Raw story content is session-scoped: `submissions.raw_text` is nulled by the
   TTL purge; long-lived rows are keyed by `content_hash` only.
 """
@@ -114,6 +117,21 @@ class Persona(Base):
     dropped_at_beat: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     run: Mapped[Run] = relationship(back_populates="personas")
+
+
+class Editor(Base):
+    """Editorial team login (auth only, seeded from AUTH_USERS at startup).
+
+    Content-not-creator: deliberately unlinked from every content table —
+    editors authenticate, they are never recorded against submissions/runs.
+    """
+
+    __tablename__ = "editors"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    username: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(100))  # bcrypt, never plaintext
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
 class ChatMessage(Base):

@@ -10,9 +10,17 @@ interface Props {
   open: boolean;
   initialPersonaId: string | null;
   onClose: () => void;
+  onUnauthorized: () => void;
 }
 
-export default function ChatDrawer({ runId, personas, open, initialPersonaId, onClose }: Props) {
+export default function ChatDrawer({
+  runId,
+  personas,
+  open,
+  initialPersonaId,
+  onClose,
+  onUnauthorized,
+}: Props) {
   const [selected, setSelected] = useState<string>(initialPersonaId ?? AGENT_KEY);
   const [threads, setThreads] = useState<Record<string, ChatMessage[]>>({});
   const [input, setInput] = useState('');
@@ -51,6 +59,10 @@ export default function ChatDrawer({ runId, personas, open, initialPersonaId, on
       const reply = await api.sendChat(runId, message, key === AGENT_KEY ? null : key);
       setThreads((t) => ({ ...t, [key]: [...(t[key] ?? []), reply] }));
     } catch (err) {
+      if (err instanceof api.UnauthorizedError) {
+        onUnauthorized();
+        return;
+      }
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSending(false);

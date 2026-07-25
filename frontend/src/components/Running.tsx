@@ -12,9 +12,18 @@ interface Props {
   onFailed: (message: string) => void;
   onRetry: () => void;
   onBack: () => void;
+  onUnauthorized: () => void;
 }
 
-export default function Running({ run, error, onDone, onFailed, onRetry, onBack }: Props) {
+export default function Running({
+  run,
+  error,
+  onDone,
+  onFailed,
+  onRetry,
+  onBack,
+  onUnauthorized,
+}: Props) {
   useEffect(() => {
     if (!run) return;
 
@@ -53,6 +62,10 @@ export default function Running({ run, error, onDone, onFailed, onRetry, onBack 
       } catch (err) {
         if (!stopped && !settled) {
           settled = true;
+          if (err instanceof api.UnauthorizedError) {
+            onUnauthorized();
+            return;
+          }
           onFailed(err instanceof Error ? err.message : String(err));
         }
       }
@@ -63,7 +76,7 @@ export default function Running({ run, error, onDone, onFailed, onRetry, onBack 
       stopped = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [run, onDone, onFailed]);
+  }, [run, onDone, onFailed, onUnauthorized]);
 
   if (error) {
     return (
