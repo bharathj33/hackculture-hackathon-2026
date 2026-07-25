@@ -31,6 +31,20 @@ No keys? `DEMO_MOCK=true` on the API → whole wizard works with canned verdict.
 - **triage** — one LLM pass, ~30-60s, the LIVE on-stage run
 - **full** — MiroFish swarm, 15–40 min cold (Zep graph build dominates). **Pre-run the night before**; cached verdict shown on stage. If full mode dies mid-run it auto-falls back to triage (NFR-6)
 
+## Pre-run outcome (Jul 26, 01:00–01:30)
+
+What actually happened, and the honest demo assets it produced:
+
+| Asset | Status | Demo use |
+|---|---|---|
+| **Triage verdict on Ep 02** | ✓ REAL — 8.7/10, run `63bc0518f932421e96a9eae3e32222ad` | the LIVE on-stage run (~1 min, reproducible) |
+| **Zep knowledge graph** from Ep 02 + panel | ✓ built (project in MiroFish UI :3000) | show graph screen — "story + audience as a knowledge graph" |
+| **Persona generation** | ✓ REAL — panel listeners became agents with rich profiles (Neha-L08, Pooja-L06, Sanjay-L05…) matching panel config | screenshot/show `reddit_profiles.json` — the swarm exists |
+| **MiroFish report** (report agent over graph) | see report_7fad22fa8796 | deep-report slide, honestly labeled |
+| **Full swarm rounds** | ✗ OASIS subprocess wedges ~64K output on this machine (known issue, manager AND manual runs) | say honestly: "swarm rounds hit a local runtime bug; architecture is wired end-to-end — graph, personas, interview API, report agent all live" |
+
+Known leak to mention if asked: story characters also became agents alongside panel listeners (entity extraction is greedy) — filter by `-LNN` suffix is the post-hackathon fix.
+
 ## Tonight's pre-run checklist (once keys in)
 
 1. `cd backend && uv run uvicorn app.main:app` (real keys, no DEMO_MOCK)
