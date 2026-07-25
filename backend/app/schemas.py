@@ -14,7 +14,7 @@ class SubmissionOut(BaseModel):
     id: str
     content_hash: str
     media_type: Literal["text", "audio", "video"]
-    status: Literal["processing", "ready", "failed"]
+    status: str  # loose on output — an unexpected DB status must not 500 a poll
     story_rep: dict | None = None
     error: str | None = None
 
@@ -75,7 +75,7 @@ class RunOut(BaseModel):
     panel_id: str
     mode: str
     backtest: bool
-    status: Literal["queued", "running", "done", "failed"]
+    status: str  # loose on output — see SubmissionOut.status
     cost_tokens: int
     error: str | None = None
 
