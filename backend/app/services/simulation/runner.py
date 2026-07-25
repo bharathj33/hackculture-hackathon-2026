@@ -141,6 +141,7 @@ def _run_full(db, run: Run, sub: Submission, panel: Panel) -> None:
             )
         )
     run.cost_tokens = sim.get("cost_tokens", 0)
+    run.mirofish_sim_id = sim.get("sim_id")  # enables live interview while env alive
     _save_report(db, run, sim["report"])
 
 

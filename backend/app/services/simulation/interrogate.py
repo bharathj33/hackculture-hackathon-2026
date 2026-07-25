@@ -18,7 +18,23 @@ def ask(db: Session, run: Run, persona: Persona | None, message: str) -> str:
     client = OpenAI(api_key=get_settings().openai_api_key)
 
     if persona is not None:
-        # FR-5.1 — roleplay THE stored persona, grounded in its event log
+        # FR-5.1 tier 1 — LIVE interview through MiroFish while the OASIS env is
+        # alive (richer: agent answers from its own simulation memory)
+        agent_id = (persona.profile or {}).get("agent_id")
+        if run.mirofish_sim_id and agent_id is not None:
+            try:
+                from app.services.simulation.mirofish_client import MiroFishClient
+
+                mf = MiroFishClient()
+                try:
+                    return mf.chat_with_persona(run.mirofish_sim_id, int(agent_id), message)
+                finally:
+                    mf.http.close()
+            except Exception:  # noqa: BLE001 — env closed/timeout → tier 2 fallback
+                pass
+
+    if persona is not None:
+        # FR-5.1 tier 2 — roleplay THE stored persona, grounded in its event log
         system = (
             "You are a simulated audio-drama listener. Stay in character; answer "
             "from your profile and event log ONLY — no invented events.\n"

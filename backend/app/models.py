@@ -67,6 +67,8 @@ class Run(Base):
     panel_id: Mapped[str] = mapped_column(ForeignKey("panels.id"))
     mode: Mapped[str] = mapped_column(String(10), default="full")  # full | triage
     backtest: Mapped[bool] = mapped_column(default=False)  # F6
+    # live-interview handle (FR-5.1): valid only while the MiroFish OASIS env is alive
+    mirofish_sim_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="queued")  # queued|running|done|failed
     cost_tokens: Mapped[int] = mapped_column(Integer, default=0)  # NFR-2 tracking
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
