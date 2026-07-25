@@ -146,7 +146,43 @@ def _run_full(db, run: Run, sub: Submission, panel: Panel) -> None:
     _save_report(db, run, sim["report"])
 
 
+_PRIORITY_WORDS = {"high": 1, "critical": 1, "medium": 2, "moderate": 2, "low": 3}
+
+
+def _to_bool(v) -> bool:
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):  # LLM often writes prose here — any non-empty risk text = True
+        return v.strip().lower() not in ("", "false", "no", "none", "null", "n/a", "low")
+    return bool(v)
+
+
+def _normalize_verdict(data: dict) -> dict:
+    """Coerce LLM-JSON drift into schema types (priority 'High', prose booleans...)."""
+    for d in data.get("dropoff", []):
+        d["beat_idx"] = int(d.get("beat_idx", 0))
+        d["retained_pct"] = float(d.get("retained_pct", 0))
+        if d["retained_pct"] <= 1.0 and d["retained_pct"] > 0:
+            d["retained_pct"] *= 100  # 0-1 scale drift
+        d["cliff"] = _to_bool(d.get("cliff", False))
+        d["paywall_risk"] = _to_bool(d.get("paywall_risk", False))
+        if d.get("cause") is not None:
+            d["cause"] = str(d["cause"])
+    for i, f in enumerate(data.get("fixes", [])):
+        p = f.get("priority", i + 1)
+        f["priority"] = _PRIORITY_WORDS.get(str(p).strip().lower(), None) or (int(p) if str(p).isdigit() else i + 1)
+        f["est_delta"] = str(f.get("est_delta", "n/a"))
+        f["text"] = str(f.get("text", ""))
+    for s in data.get("segments", []):
+        s["score"] = float(s.get("score", 0))
+        s["n"] = int(s.get("n", 0))
+        s["group"] = str(s.get("group", ""))
+    data["score"] = max(0.0, min(10.0, float(data.get("score", 0))))
+    return data
+
+
 def _save_report(db, run: Run, data: dict) -> None:
+    data = _normalize_verdict(data)
     db.add(
         Report(
             run_id=run.id,
