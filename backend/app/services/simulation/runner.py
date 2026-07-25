@@ -16,6 +16,7 @@ from openai import OpenAI
 from app.config import get_settings
 from app.db import SessionLocal
 from app.models import Panel, Persona, Report, Run, Submission
+from app.services import lakehouse
 from app.services.simulation.mirofish_client import MiroFishClient
 
 log = logging.getLogger(__name__)
@@ -160,6 +161,4 @@ def _save_report(db, run: Run, data: dict) -> None:
         )
     )
     # Databricks gold-table mirror (sponsor integration, non-fatal no-op without env)
-    from app.services import lakehouse
-
     lakehouse.mirror_verdict(run.id, run.content_hash, run.panel_id, {**data, "confidence_note": CONFIDENCE_NOTE})

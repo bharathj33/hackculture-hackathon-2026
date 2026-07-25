@@ -161,6 +161,18 @@ class MiroFishClient:
         )
         return self._ok(r)["project_id"]
 
+    def _poll(self, fetch, *, done, failed, timeout_s: int = 900, every: int = 5, label: str = "poll"):
+        """Shared bounded poll: fetch() → dict; done(d)/failed(d) → bool."""
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            time.sleep(every)
+            d = fetch()
+            if done(d):
+                return d
+            if failed(d):
+                raise MiroFishError(f"{label} failed: {d.get('error')}")
+        raise MiroFishError(f"{label} timeout ({timeout_s}s)")
+
     def _graph_build(self, project_id: str) -> None:
         r = self.http.post("/api/graph/build", json={"project_id": project_id})
         data = self._ok(r)
@@ -181,16 +193,12 @@ class MiroFishClient:
         data = self._ok(r)
         if data.get("already_prepared"):
             return
-        deadline = time.time() + 900
-        while time.time() < deadline:
-            time.sleep(5)
-            s = self._ok(self.http.post("/api/simulation/prepare/status", json={"simulation_id": sim_id}))
-            status = s.get("status")
-            if status in ("ready", "completed"):
-                return
-            if status == "failed":
-                raise MiroFishError(f"prepare failed: {s.get('error')}")
-        raise MiroFishError("prepare timeout (15 min)")
+        self._poll(
+            lambda: self._ok(self.http.post("/api/simulation/prepare/status", json={"simulation_id": sim_id})),
+            done=lambda s: s.get("status") in ("ready", "completed"),
+            failed=lambda s: s.get("status") == "failed",
+            label="prepare",
+        )
 
     def _sim_start(self, sim_id: str, max_rounds: int) -> None:
         # platform="reddit" (not "parallel"): both platforms must be ENABLED at create
@@ -221,15 +229,14 @@ class MiroFishClient:
         report_id = data["report_id"]
         if data.get("already_generated"):
             return report_id
-        deadline = time.time() + 900
-        while time.time() < deadline:
-            time.sleep(8)
-            s = self._ok(self.http.post("/api/report/generate/status", json={"simulation_id": sim_id}))
-            if s.get("status") == "completed" or s.get("already_completed"):
-                return s.get("report_id", report_id)
-            if s.get("status") == "failed":
-                raise MiroFishError(f"report failed: {s.get('error')}")
-        raise MiroFishError("report timeout (15 min)")
+        s = self._poll(
+            lambda: self._ok(self.http.post("/api/report/generate/status", json={"simulation_id": sim_id})),
+            done=lambda s: s.get("status") == "completed" or s.get("already_completed"),
+            failed=lambda s: s.get("status") == "failed",
+            every=8,
+            label="report",
+        )
+        return s.get("report_id", report_id)
 
     def _get_report(self, report_id: str) -> dict:
         return self._ok(self.http.get(f"/api/report/{report_id}"))
@@ -248,15 +255,14 @@ class MiroFishClient:
             return []
 
     def _poll_task(self, path: str, timeout_s: int = 900) -> dict:
-        deadline = time.time() + timeout_s
-        while time.time() < deadline:
-            time.sleep(5)
-            t = self._ok(self.http.get(path))
-            if t["status"] == "completed":
-                return t.get("result", {})
-            if t["status"] == "failed":
-                raise MiroFishError(f"task failed: {t.get('error')}")
-        raise MiroFishError(f"task timeout: {path}")
+        t = self._poll(
+            lambda: self._ok(self.http.get(path)),
+            done=lambda t: t["status"] == "completed",
+            failed=lambda t: t["status"] == "failed",
+            timeout_s=timeout_s,
+            label=f"task {path}",
+        )
+        return t.get("result", {})
 
     # ---------- transform to our schema ----------
 
