@@ -110,6 +110,7 @@ def _run_triage(db, run: Run, sub: Submission, panel: Panel) -> None:
         "You simulate an audience panel reacting to a serialized audio-drama story, "
         f"panel config: {json.dumps(panel.config)}. Story beats: "
         f"{json.dumps(sub.story_rep)[:40_000]}\n"
+        "Write every text field in English regardless of the story's language. "
         "Return STRICT JSON: {score: float 0-10, rationale: str, "
         "pros: [{text, persona_refs: []}], cons: [{text, persona_refs: []}], "
         "dropoff: [{beat_idx, retained_pct, cliff, cause, paywall_risk}], "

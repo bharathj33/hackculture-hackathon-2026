@@ -70,7 +70,7 @@ class MiroFishClient:
         self._sim_prepare(sim_id)
         stage("swarm rounds")
         self._sim_start(sim_id, max_rounds=max_rounds)
-        self._wait_run(sim_id)
+        self._wait_run(sim_id, on_round=stage)
         stage("compiling verdict")
         report_id = self._report_generate(sim_id)
         raw_report = self._get_report(report_id)
@@ -197,13 +197,20 @@ class MiroFishClient:
             )
         )
 
-    def _wait_run(self, sim_id: str, timeout_s: int = 1800) -> None:
+    def _wait_run(self, sim_id: str, timeout_s: int = 3600, on_round=None) -> None:
+        # 3600s: Railway's shared vCPU runs OASIS agent-graph generation far slower
+        # than local; 1800s starved otherwise-healthy runs into the triage fallback.
         deadline = time.time() + timeout_s
+        last_round = None
         while time.time() < deadline:
             time.sleep(10)
             s = self._ok(self.http.get(f"/api/simulation/{sim_id}/run-status"))
             st = s.get("runner_status")
             log.info("run %s: %s round %s/%s", sim_id, st, s.get("current_round"), s.get("total_rounds"))
+            cur, tot = s.get("current_round"), s.get("total_rounds")
+            if on_round and cur is not None and cur != last_round:
+                last_round = cur
+                on_round(f"swarm rounds {cur}/{tot or '?'}")
             if st in ("completed", "stopped"):
                 return
             if st == "failed":
@@ -278,7 +285,8 @@ class MiroFishClient:
             "personas: [{group_label: str, profile: {name: str, agent_id: int|null, summary: str, persona_prompt: str}, "
             "event_log: [{beat_idx: int, action: str, note: str}], dropped_at_beat: int|null}]}\n"
             "Ground every claim in the report/timeline; dropoff must cover all episodes; "
-            "flag paywall_risk=true for cliffs in episodes 1-10."
+            "flag paywall_risk=true for cliffs in episodes 1-10. "
+            "Write every text field in English regardless of the story's language."
         )
         resp = self._openai.chat.completions.create(
             model=get_settings().model_transform,
