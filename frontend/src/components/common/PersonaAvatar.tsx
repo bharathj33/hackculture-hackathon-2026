@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -94,7 +94,7 @@ interface PersonaAvatarProps {
   className?: string
 }
 
-export function PersonaAvatar({ handle, size = 40, className }: PersonaAvatarProps) {
+function FallbackPersonaAvatar({ handle, size = 40, className }: PersonaAvatarProps) {
   const clipId = `pa-${useId().replace(/:/g, '')}`
 
   const critic = isCriticHandle(handle)
@@ -183,5 +183,53 @@ export function PersonaAvatar({ handle, size = 40, className }: PersonaAvatarPro
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+function avatarSrc(handle: string): string {
+  const slug = handle
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  return `${import.meta.env.BASE_URL}personas/${slug}.webp`
+}
+
+/**
+ * UX portrait for the canonical 18-person cast. The deterministic SVG remains
+ * the fallback for custom panels, future handles, and failed asset requests.
+ */
+export function PersonaAvatar({ handle, size = 40, className }: PersonaAvatarProps) {
+  const src = avatarSrc(handle)
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const critic = isCriticHandle(handle)
+
+  return (
+    <span
+      style={{ width: size, height: size }}
+      className={cn(
+        'relative inline-flex shrink-0 overflow-hidden bg-muted',
+        critic && 'ring-2 ring-primary/70 ring-offset-2 ring-offset-background',
+        className,
+      )}
+    >
+      {failedSrc === src ? (
+        <FallbackPersonaAvatar handle={handle} size={size} />
+      ) : (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onError={() => setFailedSrc(src)}
+          className="size-full object-cover"
+        />
+      )}
+    </span>
   )
 }

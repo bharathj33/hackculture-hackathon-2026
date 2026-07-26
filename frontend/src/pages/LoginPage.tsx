@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { BarChart3, Loader2, Lock, LogIn, User } from 'lucide-react'
 
-import { AuthDisabledError, login, UnauthorizedError } from '@/api'
+import { AuthDisabledError, login, setToken, UnauthorizedError } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -30,9 +30,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     setReady(true)
-    // Testing: skip login until auth is wired at the end.
-    navigate(redirectTo, { replace: true })
-  }, [navigate, redirectTo])
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -44,6 +42,9 @@ export default function LoginPage() {
       navigate(redirectTo)
     } catch (err) {
       if (err instanceof AuthDisabledError) {
+        // Local dev: backend 503s with no JWT_SECRET and gates nothing. RequireAuth
+        // only checks token presence, so store a sentinel the open backend ignores.
+        setToken('auth-disabled')
         navigate(redirectTo)
       } else if (err instanceof UnauthorizedError) {
         setError('Invalid username or password.')
@@ -84,13 +85,18 @@ export default function LoginPage() {
             ready ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
           }`}
         >
-          <header className="flex items-center gap-3 pb-10">
-            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-              <BarChart3 className="size-5" strokeWidth={2} aria-hidden="true" />
-            </span>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">StoryCritic</h1>
-              <p className="label-caps pt-1 text-muted-foreground">Editorial Intelligence</p>
+          <header className="pb-10">
+            <p className="label-caps pb-3 text-muted-foreground">
+              Team {TEAM.name} · {TEAM.event} Hackathon
+            </p>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
+                <BarChart3 className="size-5" strokeWidth={2} aria-hidden="true" />
+              </span>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight">StoryCritic</h1>
+                <p className="label-caps pt-1 text-muted-foreground">Editorial Intelligence</p>
+              </div>
             </div>
           </header>
 
