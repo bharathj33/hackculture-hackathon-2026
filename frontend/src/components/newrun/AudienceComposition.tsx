@@ -10,13 +10,13 @@ const total = archetypeMix.reduce((sum, a) => sum + a.n, 0)
  */
 export function AudienceComposition() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
       <div>
         <p className="text-sm text-foreground">
           <span className="font-mono font-semibold">{total}</span> agents cast from{' '}
           <span className="font-medium">{activePanel.name}</span>
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 break-words text-xs text-muted-foreground">
           {activePanel.config.market} · {activePanel.config.language.toUpperCase()} — they read the
           story, then post and reply to each other across rounds. The verdict is what that
           discussion settles on.

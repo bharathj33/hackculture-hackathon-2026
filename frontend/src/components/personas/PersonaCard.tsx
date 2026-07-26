@@ -35,15 +35,15 @@ export function PersonaCard({ persona, runId }: PersonaCardProps) {
       )}
       aria-label={`Open ${persona.handle} listener record`}
     >
-      <div className="flex items-start gap-4 p-5">
-        <PersonaAvatar handle={persona.handle} size={64} className="rounded-lg" />
+      <div className="flex items-start gap-3 p-4 sm:gap-4 sm:p-5">
+        <PersonaAvatar handle={persona.handle} size={56} className="shrink-0 rounded-lg" />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
             <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold">
               {persona.handle}
             </p>
-            <Badge variant={dropped ? 'destructive' : 'success'}>
+            <Badge variant={dropped ? 'destructive' : 'success'} className="shrink-0">
               {dropped ? 'Dropped' : 'Finished'}
             </Badge>
           </div>
@@ -53,9 +53,9 @@ export function PersonaCard({ persona, runId }: PersonaCardProps) {
         </div>
       </div>
 
-      <p className="px-5 text-sm leading-relaxed text-muted-foreground">{persona.profile}</p>
+      <p className="px-4 text-sm leading-relaxed break-words text-muted-foreground sm:px-5">{persona.profile}</p>
 
-      <div className="mt-3 flex flex-wrap gap-1.5 px-5 pb-5">
+      <div className="mt-3 flex flex-wrap gap-1.5 px-4 pb-4 sm:px-5 sm:pb-5">
         {persona.interests.map((interest) => (
           <Badge key={interest} variant="secondary" className="font-normal">
             {interest}
@@ -63,7 +63,7 @@ export function PersonaCard({ persona, runId }: PersonaCardProps) {
         ))}
       </div>
 
-      <div className="mt-auto flex items-center justify-between gap-3 border-t px-5 py-3 text-sm">
+      <div className="mt-auto flex items-center justify-between gap-3 border-t px-4 py-3 text-sm sm:px-5">
         <span className="font-mono text-xs text-muted-foreground tabular-nums">
           {persona.progress_pct}% heard
         </span>

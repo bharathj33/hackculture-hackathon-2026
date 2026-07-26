@@ -94,8 +94,8 @@ export function InterrogationPane({ runId, persona, beats, beatCount }: Interrog
     <Panel
       heading="Interrogation"
       flush
-      className="min-w-0"
-      aside={<Badge variant="muted">Simulated listener</Badge>}
+      className="min-h-0 min-w-0 flex-1"
+      aside={<Badge variant="muted" className="hidden sm:inline-flex">Simulated listener</Badge>}
     >
       <InterrogationHeader persona={persona} beats={beats} beatCount={beatCount} />
       <EventLog events={persona.event_log} />

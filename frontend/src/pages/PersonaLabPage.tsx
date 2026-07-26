@@ -110,7 +110,7 @@ export default function PersonaLabPage() {
         }
       />
 
-      <main className="grid min-h-0 flex-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] gap-4 overflow-hidden p-4 lg:grid-cols-[minmax(320px,340px)_minmax(0,1fr)] lg:grid-rows-1">
+      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3 sm:gap-4 sm:p-4 lg:grid lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)] lg:grid-rows-1">
         <PersonaRail
           personas={listeners}
           selectedId={selected.id}

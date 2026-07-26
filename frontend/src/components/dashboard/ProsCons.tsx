@@ -48,8 +48,8 @@ export function ProsCons({ className }: { className?: string }) {
   const { report } = useDashboard()
 
   return (
-    <Panel heading="Strengths & Risks" className={className} flush>
-      <div className="grid min-h-0 flex-1 divide-y md:grid-cols-2 md:divide-x md:divide-y-0">
+    <Panel heading="Strengths & Risks" className={cn('min-w-0', className)} flush>
+      <div className="grid min-h-0 min-w-0 flex-1 divide-y md:grid-cols-2 md:divide-x md:divide-y-0">
         <FindingColumn
           title="Strengths"
           items={report.pros}

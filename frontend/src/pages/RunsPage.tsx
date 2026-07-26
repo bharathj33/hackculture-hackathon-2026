@@ -4,6 +4,7 @@ import { TopBar } from '@/components/layout/TopBar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -47,6 +48,102 @@ function formatStartedAt(value: string | null): string {
   return stamp.format(new Date(value))
 }
 
+function RunCard({
+  run,
+  onOpen,
+}: {
+  run: ApiRunSummary
+  onOpen: (runId: string) => void
+}) {
+  const openable = run.status === 'done'
+  const statusVariant =
+    STATUS_VARIANT[run.status as keyof typeof STATUS_VARIANT] ?? 'muted'
+  const label = runLabel(run)
+
+  return (
+    <Card
+      role={openable ? 'button' : undefined}
+      tabIndex={openable ? 0 : undefined}
+      onClick={openable ? () => onOpen(run.id) : undefined}
+      onKeyDown={
+        openable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onOpen(run.id)
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        'gap-0 py-0 shadow-none transition-colors',
+        openable
+          ? 'cursor-pointer hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none'
+          : 'opacity-60',
+      )}
+    >
+      <div className="space-y-3 p-4">
+        <div className="min-w-0">
+          {openable ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                onOpen(run.id)
+              }}
+              className="w-full truncate text-left text-sm font-medium underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none"
+            >
+              {label}
+            </button>
+          ) : (
+            <p className="truncate text-sm font-medium">{label}</p>
+          )}
+          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+            {run.id} · {run.language.toUpperCase()}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={run.mode === 'full' ? 'secondary' : 'outline'}>
+            {run.mode === 'full' ? 'Full swarm' : 'Triage'}
+          </Badge>
+          <Badge variant={statusVariant}>{run.status}</Badge>
+        </div>
+
+        <dl className="grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <dt className="label-caps text-muted-foreground">Score</dt>
+            <dd className="mt-0.5">
+              {run.score === null ? (
+                <span className="text-muted-foreground">—</span>
+              ) : (
+                <span
+                  className={cn(
+                    'font-mono text-base font-semibold tabular-nums',
+                    scoreTone(run.score),
+                  )}
+                >
+                  {run.score.toFixed(1)}
+                </span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="label-caps text-muted-foreground">Agents</dt>
+            <dd className="mt-0.5 font-mono tabular-nums">{run.persona_count}</dd>
+          </div>
+          <div>
+            <dt className="label-caps text-muted-foreground">Started</dt>
+            <dd className="mt-0.5 font-mono text-muted-foreground">
+              {formatStartedAt(run.started_at)}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </Card>
+  )
+}
+
 export default function RunsPage() {
   const navigate = useNavigate()
   const { runs, loading, error } = useRuns()
@@ -70,7 +167,7 @@ export default function RunsPage() {
         }
       />
 
-      <main className="min-h-0 flex-1 overflow-auto p-6">
+      <main className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
         {error ? (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>{error}</AlertDescription>
@@ -91,94 +188,112 @@ export default function RunsPage() {
             </Button>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="label-caps text-muted-foreground">Story</TableHead>
-                <TableHead className="label-caps text-muted-foreground">Mode</TableHead>
-                <TableHead className="label-caps text-muted-foreground">Status</TableHead>
-                <TableHead className="label-caps text-right text-muted-foreground">Score</TableHead>
-                <TableHead className="label-caps text-right text-muted-foreground">Agents</TableHead>
-                <TableHead className="label-caps text-right text-muted-foreground">Tokens</TableHead>
-                <TableHead className="label-caps text-right text-muted-foreground">Started</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {runs.map((run) => {
-                const openable = run.status === 'done'
-                const statusVariant =
-                  STATUS_VARIANT[run.status as keyof typeof STATUS_VARIANT] ?? 'muted'
+          <>
+            <div className="space-y-3 lg:hidden">
+              {runs.map((run) => (
+                <RunCard key={run.id} run={run} onOpen={open} />
+              ))}
+            </div>
 
-                return (
-                  <TableRow
-                    key={run.id}
-                    onClick={openable ? () => open(run.id) : undefined}
-                    className={cn(
-                      'hover:bg-muted',
-                      openable ? 'cursor-pointer' : 'opacity-60',
-                    )}
-                  >
-                    <TableCell className="py-3">
-                      {openable ? (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            open(run.id)
-                          }}
-                          className="rounded-sm text-left font-medium underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none"
-                        >
-                          {runLabel(run)}
-                        </button>
-                      ) : (
-                        <span className="font-medium">{runLabel(run)}</span>
-                      )}
-                      <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
-                        {run.id} · {run.language.toUpperCase()}
-                      </span>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge variant={run.mode === 'full' ? 'secondary' : 'outline'}>
-                        {run.mode === 'full' ? 'Full swarm' : 'Triage'}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge variant={statusVariant}>{run.status}</Badge>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      {run.score === null ? (
-                        <span className="text-muted-foreground">—</span>
-                      ) : (
-                        <span
-                          className={cn(
-                            'font-mono text-lg font-semibold tabular-nums',
-                            scoreTone(run.score),
-                          )}
-                        >
-                          {run.score.toFixed(1)}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {run.persona_count}
-                    </TableCell>
-
-                    <TableCell className="text-right font-mono text-sm text-muted-foreground tabular-nums">
-                      {(run.cost_tokens / 1000).toFixed(0)}k
-                    </TableCell>
-
-                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                      {formatStartedAt(run.started_at)}
-                    </TableCell>
+            <div className="hidden lg:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="label-caps text-muted-foreground">Story</TableHead>
+                    <TableHead className="label-caps text-muted-foreground">Mode</TableHead>
+                    <TableHead className="label-caps text-muted-foreground">Status</TableHead>
+                    <TableHead className="label-caps text-right text-muted-foreground">
+                      Score
+                    </TableHead>
+                    <TableHead className="label-caps text-right text-muted-foreground">
+                      Agents
+                    </TableHead>
+                    <TableHead className="label-caps text-right text-muted-foreground">
+                      Tokens
+                    </TableHead>
+                    <TableHead className="label-caps text-right text-muted-foreground">
+                      Started
+                    </TableHead>
                   </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {runs.map((run) => {
+                    const openable = run.status === 'done'
+                    const statusVariant =
+                      STATUS_VARIANT[run.status as keyof typeof STATUS_VARIANT] ?? 'muted'
+
+                    return (
+                      <TableRow
+                        key={run.id}
+                        onClick={openable ? () => open(run.id) : undefined}
+                        className={cn(
+                          'hover:bg-muted',
+                          openable ? 'cursor-pointer' : 'opacity-60',
+                        )}
+                      >
+                        <TableCell className="py-3">
+                          {openable ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                open(run.id)
+                              }}
+                              className="rounded-sm text-left font-medium underline-offset-4 hover:underline focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none"
+                            >
+                              {runLabel(run)}
+                            </button>
+                          ) : (
+                            <span className="font-medium">{runLabel(run)}</span>
+                          )}
+                          <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+                            {run.id} · {run.language.toUpperCase()}
+                          </span>
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge variant={run.mode === 'full' ? 'secondary' : 'outline'}>
+                            {run.mode === 'full' ? 'Full swarm' : 'Triage'}
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell>
+                          <Badge variant={statusVariant}>{run.status}</Badge>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          {run.score === null ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            <span
+                              className={cn(
+                                'font-mono text-lg font-semibold tabular-nums',
+                                scoreTone(run.score),
+                              )}
+                            >
+                              {run.score.toFixed(1)}
+                            </span>
+                          )}
+                        </TableCell>
+
+                        <TableCell className="text-right font-mono text-sm tabular-nums">
+                          {run.persona_count}
+                        </TableCell>
+
+                        <TableCell className="text-right font-mono text-sm text-muted-foreground tabular-nums">
+                          {(run.cost_tokens / 1000).toFixed(0)}k
+                        </TableCell>
+
+                        <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                          {formatStartedAt(run.started_at)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </main>
 

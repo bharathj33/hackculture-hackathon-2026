@@ -45,7 +45,7 @@ export function CastProfileGrid({
             <p className="text-sm font-medium">No cast profiles for this panel</p>
           </div>
         ) : (
-          <ul className="mt-5 grid list-none gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <ul className="mt-5 grid list-none grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {cast.map((profile) => (
               <li key={profile.id} className="min-w-0">
                 <CastProfileCard profile={profile} />

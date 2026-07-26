@@ -20,11 +20,11 @@ export function PrioritizedFixes({ className }: { className?: string }) {
           {fixes.length} {fixes.length === 1 ? 'change' : 'changes'}
         </span>
       }
-      className={className}
+      className={cn('min-w-0', className)}
       flush
     >
       {fixes.length === 0 ? (
-        <p className="p-4 text-sm text-muted-foreground">
+        <p className="p-3 text-sm text-muted-foreground sm:p-4">
           No fixes returned — the panel found nothing worth changing.
         </p>
       ) : (
@@ -33,7 +33,7 @@ export function PrioritizedFixes({ className }: { className?: string }) {
             const lead = index === 0
 
             return (
-              <li key={fix.priority} className="flex items-start gap-4 px-4 py-4">
+              <li key={fix.priority} className="flex items-start gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4">
                 <span
                   className={cn(
                     'flex size-7 shrink-0 items-center justify-center rounded-md font-mono text-sm font-semibold tabular-nums',

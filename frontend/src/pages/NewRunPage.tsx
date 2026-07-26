@@ -137,14 +137,14 @@ export default function NewRunPage() {
       />
 
       {(panelError || ingestError) && (
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 sm:px-6">
           <Alert variant="destructive">
             <AlertDescription>{ingestError ?? panelError}</AlertDescription>
           </Alert>
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,5fr)] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
+      <div className="grid min-h-0 min-w-0 flex-1 gap-4 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,5fr)] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
         <Panel heading="Step 01 — Submit Story">
           <StoryInput value={draft} onChange={setDraft} disabled={inputDisabled} />
         </Panel>
@@ -152,7 +152,7 @@ export default function NewRunPage() {
         <Panel
           heading="Step 02 — The Audience"
           aside={
-            <span className="text-xs text-muted-foreground">
+            <span className="hidden min-w-0 truncate text-xs text-muted-foreground sm:inline">
               {totalAgents} agents · {archetypeMix.length} roles · {panelName}
             </span>
           }

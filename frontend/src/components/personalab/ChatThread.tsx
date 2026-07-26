@@ -6,7 +6,7 @@ function AgentBubble({ handle, content }: { handle: string; content: string }) {
   return (
     <li className="flex flex-col items-start gap-1.5">
       <span className="label-caps text-muted-foreground">{handle}</span>
-      <p className="max-w-[92%] rounded-lg rounded-tl-sm border bg-muted px-4 py-3 text-sm leading-relaxed text-foreground">
+      <p className="max-w-[92%] rounded-lg rounded-tl-sm border bg-muted px-3 py-2.5 text-sm leading-relaxed break-words text-foreground sm:px-4 sm:py-3">
         {content}
       </p>
     </li>
@@ -17,7 +17,7 @@ function EditorBubble({ content }: { content: string }) {
   return (
     <li className="flex flex-col items-end gap-1.5">
       <span className="label-caps text-muted-foreground">You</span>
-      <p className="max-w-[92%] rounded-lg rounded-tr-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
+      <p className="max-w-[92%] rounded-lg rounded-tr-sm bg-primary px-3 py-2.5 text-sm leading-relaxed break-words text-primary-foreground sm:px-4 sm:py-3">
         {content}
       </p>
     </li>
@@ -68,8 +68,8 @@ export function ChatThread({ messages, handle, pending }: ChatThreadProps) {
   }, [messages, pending])
 
   return (
-    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-      <ol className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-5 sm:py-4">
+      <ol className="mx-auto flex w-full min-w-0 max-w-3xl flex-col gap-4 sm:gap-5">
         {messages.length === 0 && !pending && <EmptyThread handle={handle} />}
 
         {messages.map((message) =>

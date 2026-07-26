@@ -30,8 +30,8 @@ export function RunSummary({ beatCount, busy, canRun, onRun }: RunSummaryProps) 
         )}
       </p>
 
-      <div className="flex flex-wrap gap-3">
-        <Button size="lg" disabled={disabled} onClick={() => onRun('triage')}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <Button size="lg" disabled={disabled} onClick={() => onRun('triage')} className="w-full sm:w-auto">
           {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Zap aria-hidden />}
           Quick Triage
           <span className="font-mono text-xs">~30s</span>
@@ -42,7 +42,7 @@ export function RunSummary({ beatCount, busy, canRun, onRun }: RunSummaryProps) 
           variant="outline"
           disabled={disabled}
           onClick={() => onRun('full')}
-          className="hover:bg-muted hover:text-foreground dark:hover:bg-muted"
+          className="w-full hover:bg-muted hover:text-foreground sm:w-auto dark:hover:bg-muted"
         >
           {busy ? <Loader2 className="animate-spin" aria-hidden /> : <Users aria-hidden />}
           Full Swarm

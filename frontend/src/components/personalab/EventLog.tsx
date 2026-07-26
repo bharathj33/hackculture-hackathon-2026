@@ -22,7 +22,7 @@ export function EventLog({ events }: { events: PersonaEvent[] }) {
   return (
     <section
       aria-labelledby={headingId}
-      className="shrink-0 border-b bg-muted px-5 py-3 text-foreground"
+      className="shrink-0 border-b bg-muted px-3 py-3 text-foreground sm:px-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h4 id={headingId} className="label-caps text-muted-foreground">
@@ -38,22 +38,24 @@ export function EventLog({ events }: { events: PersonaEvent[] }) {
           No per-beat trace was persisted for this listener.
         </p>
       ) : (
-        <ol className="mt-1 max-h-40 divide-y overflow-y-auto">
+        <ol className="mt-1 max-h-32 divide-y overflow-y-auto overscroll-contain sm:max-h-40">
           {events.map((event) => {
             const tone = ACTION[event.action]
             return (
               <li
                 key={`${event.beat_idx}-${event.action}`}
-                className="grid grid-cols-[3.75rem_7rem_minmax(0,1fr)] items-baseline gap-3 py-2"
+                className="flex flex-col gap-1 py-2 sm:grid sm:grid-cols-[3.75rem_7rem_minmax(0,1fr)] sm:items-baseline sm:gap-3"
               >
-                <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  Beat {pad2(event.beat_idx)}
-                </span>
-                <span className={cn('flex items-center gap-1.5 text-xs font-medium', tone.text)}>
-                  <span className={cn('size-1.5 shrink-0 rounded-full', tone.dot)} aria-hidden />
-                  {tone.label}
-                </span>
-                <span className="min-w-0 text-sm">{event.note}</span>
+                <div className="flex items-center gap-3 sm:contents">
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    Beat {pad2(event.beat_idx)}
+                  </span>
+                  <span className={cn('flex items-center gap-1.5 text-xs font-medium', tone.text)}>
+                    <span className={cn('size-1.5 shrink-0 rounded-full', tone.dot)} aria-hidden />
+                    {tone.label}
+                  </span>
+                </div>
+                <span className="min-w-0 text-sm break-words">{event.note}</span>
               </li>
             )
           })}

@@ -21,7 +21,7 @@ export function RunListenerGrid({
   const gridHeadingId = useId()
 
   return (
-    <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
+    <div className="mx-auto flex min-w-0 max-w-[1400px] flex-col gap-6 sm:gap-8">
       <ArchetypeStrip personas={personas} />
 
       <section aria-labelledby={gridHeadingId}>
@@ -50,7 +50,7 @@ export function RunListenerGrid({
             </p>
           </div>
         ) : (
-          <ul className="mt-4 grid list-none gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="mt-4 grid list-none gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {personas.map((persona) => (
               <li key={persona.id} className="min-w-0">
                 <PersonaCard persona={persona} runId={runId} />

@@ -22,7 +22,7 @@ export default function PersonasPage() {
         }
       />
 
-      <main className="min-h-0 flex-1 overflow-y-auto p-6">
+      <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <CastProfileGrid
           cast={cast}
           panelName={castPanelName ?? panelName}

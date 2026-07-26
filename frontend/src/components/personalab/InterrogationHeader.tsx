@@ -16,11 +16,11 @@ export function InterrogationHeader({
   const detail = exitDetail(persona, beats)
 
   return (
-    <header className="shrink-0 border-b px-5 py-4">
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-mono text-xl font-semibold tracking-tight text-foreground">
+    <header className="shrink-0 border-b px-4 py-3 sm:px-5 sm:py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-x-6 sm:gap-y-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <h3 className="font-mono text-lg font-semibold tracking-tight text-foreground sm:text-xl">
               {persona.handle}
             </h3>
             <Badge variant="secondary">{persona.group_label}</Badge>
@@ -41,11 +41,11 @@ export function InterrogationHeader({
           ) : null}
         </div>
 
-        <p className="shrink-0 text-right">
-          <span className="block font-mono text-3xl leading-none font-semibold tabular-nums text-foreground">
+        <p className="flex shrink-0 items-baseline gap-2 sm:block sm:text-right">
+          <span className="block font-mono text-2xl leading-none font-semibold tabular-nums text-foreground sm:text-3xl">
             {persona.progress_pct}%
           </span>
-          <span className="label-caps mt-1 block text-muted-foreground">Story heard</span>
+          <span className="label-caps block text-muted-foreground sm:mt-1">Story heard</span>
         </p>
       </div>
     </header>

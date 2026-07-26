@@ -19,15 +19,15 @@ export function AudienceSegments({ className }: { className?: string }) {
       aside={
         <span className="text-xs text-muted-foreground">{totalListeners} simulated listeners</span>
       }
-      className={className}
+      className={cn('min-w-0', className)}
       flush
     >
       {segments.length === 0 ? (
-        <p className="p-4 text-sm text-muted-foreground">No segment scores returned.</p>
+        <p className="p-3 text-sm text-muted-foreground sm:p-4">No segment scores returned.</p>
       ) : (
         <ul className="divide-y">
           {segments.map((segment) => (
-            <li key={segment.group} className="px-4 py-3.5">
+            <li key={segment.group} className="px-3 py-3 sm:px-4 sm:py-3.5">
               <div className="flex items-baseline justify-between gap-4">
                 <span className="min-w-0 truncate text-sm font-medium text-foreground">
                   {segment.group}

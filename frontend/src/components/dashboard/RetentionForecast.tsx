@@ -55,20 +55,20 @@ export function RetentionForecast({ className }: { className?: string }) {
         last beats. The chart is the one panel that has to let a child escape
         its bounds, so it opts out of the clip here rather than in the shell.
       */
-      className={cn('overflow-visible', className)}
+      className={cn('min-w-0 overflow-visible', className)}
     >
       {dropoff.length === 0 ? (
         <p className="text-sm text-muted-foreground">No retention curve returned for this run.</p>
       ) : (
         <>
           {/* Fixed plot height: the panel sizes itself so a taller neighbour cannot clip it. */}
-          <div className="h-[220px] w-full overflow-visible">
+          <div className="h-[200px] min-w-0 w-full overflow-hidden sm:h-[220px] sm:overflow-visible">
             <ChartContainer
               config={chartConfig}
-              className="aspect-auto h-full w-full overflow-visible [&_.recharts-wrapper]:overflow-visible"
+              className="aspect-auto h-full min-w-0 w-full overflow-hidden sm:overflow-visible [&_.recharts-wrapper]:!w-full [&_.recharts-wrapper]:overflow-visible"
             >
               {/* Left/right margin keeps the first and last EP tick from clipping. */}
-              <AreaChart data={dropoff} margin={{ top: 8, right: 20, bottom: 0, left: 20 }}>
+              <AreaChart data={dropoff} margin={{ top: 8, right: 12, bottom: 0, left: 12 }}>
                 <defs>
                   <linearGradient id="retention-fill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.35} />

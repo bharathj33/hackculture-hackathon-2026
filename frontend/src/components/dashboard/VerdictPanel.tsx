@@ -16,12 +16,12 @@ export function VerdictPanel({ className }: { className?: string }) {
   const { report } = useDashboard()
 
   return (
-    <Panel heading="Verdict" className={className}>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+    <Panel heading="Verdict" className={cn('min-w-0', className)}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-5">
         <p className="flex items-baseline gap-2">
           <span
             className={cn(
-              'font-mono text-6xl leading-none font-semibold tracking-tight tabular-nums',
+              'font-mono text-5xl leading-none font-semibold tracking-tight tabular-nums sm:text-6xl',
               scoreTone(report.score),
             )}
           >

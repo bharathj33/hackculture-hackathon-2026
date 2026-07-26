@@ -19,7 +19,7 @@ function PersonaOption({ persona, selected, beatCount, onSelect }: PersonaOption
   const exit = exitLabel(persona, beatCount)
 
   return (
-    <li className="group relative">
+    <li className="group relative shrink-0 lg:shrink">
       <input
         id={inputId}
         type="radio"
@@ -40,24 +40,28 @@ function PersonaOption({ persona, selected, beatCount, onSelect }: PersonaOption
       <div
         aria-hidden
         className={cn(
-          'border-l-2 px-4 py-3 transition-colors',
+          'transition-colors',
+          'w-[148px] rounded-lg border px-3 py-2.5',
+          'lg:w-auto lg:rounded-none lg:border-0 lg:border-l-2 lg:px-4 lg:py-3',
           'peer-focus-visible:ring-ring peer-focus-visible:ring-2 peer-focus-visible:ring-inset',
-          selected ? 'border-l-primary bg-muted' : 'border-l-transparent group-hover:bg-muted',
+          selected
+            ? 'border-primary bg-muted lg:border-l-primary'
+            : 'border-border group-hover:bg-muted lg:border-l-transparent',
         )}
       >
         <div className="flex items-center gap-2">
           <span className="min-w-0 flex-1 truncate font-mono text-sm font-semibold text-foreground">
             {persona.handle}
           </span>
-          <Badge variant={dropped ? 'destructive' : 'success'}>
+          <Badge variant={dropped ? 'destructive' : 'success'} className="shrink-0 text-[10px] lg:text-xs">
             {dropped ? 'Dropped' : 'Finished'}
           </Badge>
         </div>
 
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{persona.group_label}</p>
-        <p className="mt-2 truncate text-xs text-foreground">{exit}</p>
+        <p className="mt-2 hidden truncate text-xs text-foreground lg:block">{exit}</p>
 
-        <Progress value={persona.progress_pct} className="mt-2 h-1.5" />
+        <Progress value={persona.progress_pct} className="mt-2 h-1 lg:h-1.5" />
       </div>
     </li>
   )
@@ -75,19 +79,19 @@ export function PersonaRail({ personas, selectedId, beatCount, onSelect }: Perso
     <Panel
       heading="Listener roster"
       flush
-      className="min-w-0"
+      className="min-w-0 shrink-0 lg:min-h-0 lg:shrink"
       aside={
         <Badge variant="muted" className="font-mono tabular-nums">
           {personas.length}
         </Badge>
       }
     >
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="overflow-x-auto lg:min-h-0 lg:flex-1 lg:overflow-x-hidden lg:overflow-y-auto">
         {/* min-w-0 defeats the UA `min-inline-size: min-content` on fieldset,
             which would otherwise stretch the rail to fit untruncated handles. */}
         <fieldset className="min-w-0">
           <legend className="sr-only">Select a simulated listener to interrogate</legend>
-          <ul className="divide-y">
+          <ul className="flex flex-row gap-2 p-2 lg:flex-col lg:divide-y lg:gap-0 lg:p-0">
             {personas.map((persona) => (
               <PersonaOption
                 key={persona.id}

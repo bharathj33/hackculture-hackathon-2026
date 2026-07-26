@@ -37,8 +37,8 @@ export function StoryInput({ value, onChange, disabled = false }: StoryInputProp
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex min-h-56 flex-1 flex-col gap-2">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+      <div className="flex min-h-40 flex-1 flex-col gap-2 sm:min-h-56">
         <Label htmlFor={transcriptId}>Transcript</Label>
         <Textarea
           id={transcriptId}
@@ -81,16 +81,16 @@ export function StoryInput({ value, onChange, disabled = false }: StoryInputProp
         <Label
           htmlFor={fileId}
           className={cn(
-            'flex cursor-pointer flex-col items-center gap-2 rounded-xl px-6 py-7 text-center font-normal peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring',
+            'flex cursor-pointer flex-col items-center gap-2 rounded-xl px-4 py-5 text-center font-normal sm:px-6 sm:py-7 peer-focus-visible:ring-[3px] peer-focus-visible:ring-ring',
             disabled && 'pointer-events-none opacity-60',
           )}
         >
           <CloudUpload className="size-6 text-muted-foreground" aria-hidden />
-          <span>
+          <span className="text-sm sm:text-base">
             Drop a file here, or{' '}
             <span className="font-medium underline underline-offset-4">browse</span>
           </span>
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="max-w-full break-words font-mono text-[10px] text-muted-foreground sm:text-xs">
             {ACCEPTED_EXTENSIONS.join('  ')}
           </span>
         </Label>

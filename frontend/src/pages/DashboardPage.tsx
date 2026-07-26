@@ -96,13 +96,13 @@ function DashboardLoading({ runId }: { runId: string }) {
           </Button>
         }
       />
-      <main className="flex flex-1 flex-col gap-4 p-6">
+      <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         <Skeleton className="h-8 w-40" />
-        <div className="grid gap-4 xl:grid-cols-12">
-          <Skeleton className="h-48 xl:col-span-5" />
-          <Skeleton className="h-48 xl:col-span-7" />
-          <Skeleton className="h-64 xl:col-span-7" />
-          <Skeleton className="h-64 xl:col-span-5" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
+          <Skeleton className="h-48 md:col-span-2 xl:col-span-5" />
+          <Skeleton className="h-48 md:col-span-2 xl:col-span-7" />
+          <Skeleton className="h-64 md:col-span-1 xl:col-span-7" />
+          <Skeleton className="h-64 md:col-span-1 xl:col-span-5" />
         </div>
         <p className="text-sm text-muted-foreground">Loading run {runId}…</p>
       </main>
@@ -114,7 +114,7 @@ function DashboardError({ message, runId }: { message: string; runId: string }) 
   return (
     <>
       <TopBar title={<StoryTitle runId={runId} title="Run dashboard" />} />
-      <main className="flex flex-1 items-center justify-center p-6">
+      <main className="flex flex-1 items-center justify-center p-4 sm:p-6">
         <div className="max-w-md rounded-xl border border-destructive/40 bg-destructive/5 px-6 py-8 text-center">
           <p className="text-sm font-medium text-destructive">Could not load run dashboard</p>
           <p className="mt-1.5 text-sm text-muted-foreground">{message}</p>
@@ -196,7 +196,7 @@ export default function DashboardPage() {
             />
           }
         />
-        <main className="flex flex-1 items-center justify-center p-6">
+        <main className="flex flex-1 items-center justify-center p-4 sm:p-6">
           <div className="max-w-md text-center">
             <p className="text-sm font-medium text-foreground">Report not ready</p>
             <p className="mt-1.5 text-sm text-muted-foreground">
@@ -259,13 +259,24 @@ export default function DashboardPage() {
           />
         }
         action={
-          <div className="flex flex-col items-end gap-1">
-            <Button variant="outline" onClick={handleExport} disabled={exporting}>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleExport}
+              disabled={exporting}
+              aria-label={exporting ? 'Exporting report' : 'Export report'}
+              className="sm:size-auto sm:px-4"
+            >
               <Download aria-hidden />
-              {exporting ? 'Exporting…' : 'Export Report'}
+              <span className="hidden sm:inline">
+                {exporting ? 'Exporting…' : 'Export Report'}
+              </span>
             </Button>
             {exportError && (
-              <p className="max-w-xs text-right text-xs text-destructive">{exportError}</p>
+              <p className="hidden max-w-xs text-right text-xs text-destructive sm:block">
+                {exportError}
+              </p>
             )}
           </div>
         }
@@ -284,8 +295,8 @@ export default function DashboardPage() {
           }}
           className="flex min-h-0 flex-1 flex-col gap-0"
         >
-          <div className="flex shrink-0 items-end border-b px-6 pt-2 pb-[5px]">
-            <TabsList variant="line">
+          <div className="shrink-0 overflow-x-auto border-b px-4 pt-2 pb-[5px] sm:px-6">
+            <TabsList variant="line" className="w-max min-w-full sm:w-fit">
               <TabsTrigger value="verdict" className={TRIGGER_CLASS}>
                 Verdict
               </TabsTrigger>
@@ -300,23 +311,23 @@ export default function DashboardPage() {
           </div>
 
           <TabsContent value="verdict" className="min-h-0 overflow-y-auto">
-            <div className="grid gap-4 p-6 xl:grid-cols-12">
-              <VerdictPanel className="xl:col-span-5" />
-              <PrioritizedFixes className="xl:col-span-7" />
-              <RetentionForecast className="xl:col-span-7" />
-              <AudienceSegments className="xl:col-span-5" />
-              <ProsCons className="xl:col-span-12" />
+            <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-2 xl:grid-cols-12">
+              <VerdictPanel className="min-w-0 md:col-span-2 xl:col-span-5" />
+              <PrioritizedFixes className="min-w-0 md:col-span-2 xl:col-span-7" />
+              <RetentionForecast className="min-w-0 md:col-span-1 xl:col-span-7" />
+              <AudienceSegments className="min-w-0 md:col-span-1 xl:col-span-5" />
+              <ProsCons className="min-w-0 md:col-span-2 xl:col-span-12" />
             </div>
           </TabsContent>
 
-          <TabsContent value="timeline" className="min-h-0 overflow-y-auto">
-            <div className="flex min-h-[calc(100vh-12rem)] flex-col p-6">
+          <TabsContent value="timeline" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6">
               <BeatTimeline />
             </div>
           </TabsContent>
 
           <TabsContent value="listeners" className="min-h-0 overflow-y-auto">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <RunListenerGrid
                 runId={resolvedRunId}
                 personas={listeners}

@@ -39,9 +39,9 @@ export function CastProfileCard({ profile }: CastProfileCardProps) {
     >
       <div className={cn('h-1.5 w-full', accent)} aria-hidden />
 
-      <div className="flex flex-1 flex-col items-center px-4 pt-5 pb-4 text-center">
+      <div className="flex flex-1 flex-col items-center px-3 pt-4 pb-3 text-center sm:px-4 sm:pt-5 sm:pb-4">
         <div className="relative">
-          <PersonaAvatar handle={parsed.handle} size={72} className="rounded-xl" />
+          <PersonaAvatar handle={parsed.handle} size={64} className="rounded-xl" />
           <span
             className={cn(
               'absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full border bg-background',
@@ -53,7 +53,7 @@ export function CastProfileCard({ profile }: CastProfileCardProps) {
           </span>
         </div>
 
-        <p className="mt-3 text-base font-semibold tracking-tight">{parsed.displayName}</p>
+        <p className="mt-3 text-sm font-semibold tracking-tight sm:text-base">{parsed.displayName}</p>
         <p className="font-mono text-xs text-muted-foreground">{parsed.handle}</p>
 
         <Badge variant="outline" className="mt-2">

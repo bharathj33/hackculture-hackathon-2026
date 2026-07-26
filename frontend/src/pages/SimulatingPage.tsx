@@ -67,8 +67,8 @@ export default function SimulatingPage() {
       <SimulationStyles />
       <AmbientField />
 
-      <main className="relative flex flex-1 flex-col px-4 py-12 sm:px-8">
-        <div className="mx-auto my-auto w-full max-w-[960px]">
+      <main className="relative flex min-w-0 flex-1 flex-col px-4 py-8 sm:px-8 sm:py-12">
+        <div className="mx-auto my-auto w-full min-w-0 max-w-[960px]">
           {error ? (
             <Alert variant="destructive" className="mb-6">
               <AlertDescription>{error}</AlertDescription>
@@ -93,7 +93,7 @@ export default function SimulatingPage() {
             </span>
           </div>
 
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h1 className="mt-5 break-words text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl">
             {triage ? (
               <>
                 Quick triage — one pass over <Num>{beatCount}</Num> beats
@@ -146,10 +146,10 @@ export default function SimulatingPage() {
               Run timing
             </h2>
 
-            <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Clock className="size-3.5 shrink-0" aria-hidden="true" />
-                <span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-8 sm:gap-y-2">
+              <p className="flex min-w-0 items-start gap-2 text-xs text-muted-foreground sm:items-center">
+                <Clock className="mt-0.5 size-3.5 shrink-0 sm:mt-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">
                   On this screen{' '}
                   <span className="font-mono font-medium tabular-nums text-foreground">
                     {duration(elapsedSeconds)}
@@ -157,7 +157,7 @@ export default function SimulatingPage() {
                   — illustrative pace, not a measure of what is left.
                 </span>
               </p>
-              <p className="label-caps text-muted-foreground">
+              <p className="shrink-0 label-caps text-muted-foreground">
                 {apiDone ? 'Run complete' : running ? 'No completion estimate exists' : 'Replay ended'}
               </p>
             </div>
@@ -173,11 +173,11 @@ export default function SimulatingPage() {
             </div>
           )}
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
               onClick={() => navigate(`/runs/${runId}`)}
               disabled={!apiDone}
-              className="gap-2"
+              className="w-full gap-2 sm:w-auto"
             >
               View Verdict
               <ArrowRight aria-hidden="true" />
@@ -185,11 +185,11 @@ export default function SimulatingPage() {
             <Button
               variant="ghost"
               onClick={() => navigate('/new')}
-              className="text-muted-foreground"
+              className="w-full text-muted-foreground sm:w-auto"
             >
               Leave this run
             </Button>
-            <p className="w-full text-xs text-muted-foreground sm:w-auto">
+            <p className="text-xs text-muted-foreground sm:min-w-0 sm:flex-1">
               {apiDone
                 ? 'Redirecting to the verdict…'
                 : 'Leaving does not stop the job — nothing here can.'}

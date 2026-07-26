@@ -29,7 +29,7 @@ export function ArchetypeStrip({ personas }: ArchetypeStripProps) {
       </div>
 
       {groups.length === 0 ? null : (
-        <dl className="mt-3 grid gap-x-8 gap-y-5 border-t pt-4 sm:grid-cols-2 xl:grid-cols-4">
+        <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-5 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {groups.map(([label, count]) => (
             <div key={label} className="min-w-0">
               <dt className="flex items-baseline gap-2">
