@@ -43,6 +43,17 @@ const STAGE_ETA: Record<string, string> = {
   'panel critique (fallback)': '~1 min left',
 }
 
+/** "MP3 · 16.8 MB" from submission metadata; parts render only when known. */
+function mediaChip(run: ApiRunSummary): string {
+  const parts: string[] = []
+  if (run.media_ext) parts.push(run.media_ext.toUpperCase())
+  if (run.media_bytes != null && run.media_bytes > 0) {
+    const mb = run.media_bytes / (1024 * 1024)
+    parts.push(mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(run.media_bytes / 1024)} KB`)
+  }
+  return parts.join(' · ')
+}
+
 /** "18m 04s" / "1h 02m" / "42s" from the run's own timestamps. */
 function runDuration(startedAt?: string | null, finishedAt?: string | null): string | null {
   if (!startedAt || !finishedAt) return null
@@ -163,6 +174,7 @@ function RunCard({
           )}
           <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
             {run.id} · {run.language.toUpperCase()}
+            {mediaChip(run) ? ` · ${mediaChip(run)}` : ''}
           </p>
         </div>
 
@@ -309,6 +321,7 @@ export default function RunsPage() {
                           )}
                           <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
                             {run.id} · {run.language.toUpperCase()}
+            {mediaChip(run) ? ` · ${mediaChip(run)}` : ''}
                           </span>
                         </TableCell>
 

@@ -51,7 +51,10 @@ def _strip_bylines(text: str) -> str:
 def ingest_text(body: IngestTextIn, bg: BackgroundTasks, db: Session = Depends(get_db)):
     """FR-1.1. FR-1.5: byline lines stripped; no filename/author metadata kept."""
     clean = _strip_bylines(body.text)
-    sub = Submission(content_hash=_hash(clean), media_type="text", raw_text=clean)
+    sub = Submission(
+        content_hash=_hash(clean), media_type="text", raw_text=clean,
+        media_ext="txt", media_bytes=len(clean.encode()),
+    )
     db.add(sub)
     db.commit()
     db.refresh(sub)
@@ -81,6 +84,8 @@ async def ingest_file(file: UploadFile, bg: BackgroundTasks, db: Session = Depen
             content_hash=hashlib.sha256(data).hexdigest(),  # real content hash; re-hashed from transcript later
             media_type=media_type,
             status="processing",
+            media_ext=suffix,
+            media_bytes=len(data),
         )
         db.add(sub)
         db.commit()

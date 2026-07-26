@@ -56,6 +56,10 @@ class Submission(Base):
     # Unity Catalog Volume path of the stored upload; None when mirroring is off.
     # TTL-purged alongside raw_text so the blob never outlives the transcript (NFR-7).
     media_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # Display metadata for the ledger: container type + upload size. FR-1.5 keeps
+    # filenames out; the extension is type info, not identity.
+    media_ext: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    media_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 

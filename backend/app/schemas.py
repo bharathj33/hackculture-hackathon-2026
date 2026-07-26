@@ -127,6 +127,9 @@ class RunSummaryOut(BaseModel):
 
     story_label: str
     panel_name: str
+    media_type: str | None = None
+    media_ext: str | None = None
+    media_bytes: int | None = None
 
     _stamp_tz = field_validator("started_at", "finished_at")(_utc_stamp)
 

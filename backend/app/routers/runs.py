@@ -36,6 +36,9 @@ def _run_summary_row(
     story_rep: dict | None,
     panel_config: dict,
     panel_name: str,
+    media_type: str | None = None,
+    media_ext: str | None = None,
+    media_bytes: int | None = None,
 ) -> RunSummaryOut:
     language, beat_count, story_label = _story_meta(story_rep, panel_config)
     return RunSummaryOut(
@@ -55,6 +58,9 @@ def _run_summary_row(
         beat_count=beat_count,
         story_label=story_label,
         panel_name=panel_name,
+        media_type=media_type,
+        media_ext=media_ext,
+        media_bytes=media_bytes,
     )
 
 
@@ -92,7 +98,7 @@ def list_runs(db: Session = Depends(get_db)):
     )
     order_key = func.coalesce(Run.finished_at, Run.started_at)
     rows = (
-        db.query(Run, Report.score, persona_counts.c.persona_cnt, Submission.story_rep, Panel.config, Panel.name)
+        db.query(Run, Report.score, persona_counts.c.persona_cnt, Submission.story_rep, Panel.config, Panel.name, Submission.media_type, Submission.media_ext, Submission.media_bytes)
         .outerjoin(Report, Report.run_id == Run.id)
         .outerjoin(persona_counts, persona_counts.c.run_id == Run.id)
         .join(Submission, Submission.id == Run.submission_id)
@@ -101,8 +107,8 @@ def list_runs(db: Session = Depends(get_db)):
         .all()
     )
     return [
-        _run_summary_row(run, score, persona_cnt, story_rep, panel_config, panel_name)
-        for run, score, persona_cnt, story_rep, panel_config, panel_name in rows
+        _run_summary_row(run, score, persona_cnt, story_rep, panel_config, panel_name, mt, ext, nbytes)
+        for run, score, persona_cnt, story_rep, panel_config, panel_name, mt, ext, nbytes in rows
     ]
 
 

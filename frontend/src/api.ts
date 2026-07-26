@@ -227,6 +227,9 @@ export interface ApiRunSummary {
   beat_count: number
   story_label: string
   panel_name: string
+  media_type: string | null
+  media_ext: string | null
+  media_bytes: number | null
 }
 
 /** Matches backend `ReportOut`. */
