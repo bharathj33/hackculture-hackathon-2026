@@ -41,9 +41,16 @@ _ADDED_COLUMNS = {
 
 
 def _add_missing_columns() -> None:
-    if engine.dialect.name != "sqlite":  # PRAGMA is SQLite-only
-        return
     from sqlalchemy import text
+
+    if engine.dialect.name != "sqlite":
+        # Postgres path: ADD COLUMN IF NOT EXISTS is idempotent, no PRAGMA needed.
+        # (This used to early-return, so prod silently skipped every migration.)
+        with engine.begin() as conn:
+            for table, cols in _ADDED_COLUMNS.items():
+                for name, ddl in cols.items():
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {ddl}"))
+        return
 
     with engine.begin() as conn:
         for table, columns in _ADDED_COLUMNS.items():
