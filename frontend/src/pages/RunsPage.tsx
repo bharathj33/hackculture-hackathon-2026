@@ -29,6 +29,20 @@ const stamp = new Intl.DateTimeFormat('en-GB', {
   hour12: false,
 })
 
+/**
+ * Remaining-time hints per pipeline stage, from measured 16-listener runs
+ * (graph ~4m, casting ~6m, rounds+agent-gen ~7m, verdict ~4m). Estimates, not
+ * promises — they drift with panel size, so they render with a tilde.
+ */
+const STAGE_ETA: Record<string, string> = {
+  'knowledge graph': '~18 min left',
+  'casting personas': '~14 min left',
+  'swarm rounds': '~9 min left',
+  'compiling verdict': '~3 min left',
+  'panel critique': '~1 min left',
+  'panel critique (fallback)': '~1 min left',
+}
+
 /** In-flight badge: soft pulse + live dot, so "running" reads as activity, not a label. */
 function StatusBadge({ status, stage }: { status: string; stage?: string | null }) {
   const variant = STATUS_VARIANT[status as keyof typeof STATUS_VARIANT] ?? 'muted'
@@ -45,7 +59,10 @@ function StatusBadge({ status, stage }: { status: string; stage?: string | null 
         {status}
       </Badge>
       {live && stage ? (
-        <span className="label-caps text-[10px] text-muted-foreground">{stage}</span>
+        <span className="label-caps text-[10px] text-muted-foreground">
+          {stage}
+          {STAGE_ETA[stage] ? ` · ${STAGE_ETA[stage]}` : ''}
+        </span>
       ) : null}
     </span>
   )
