@@ -1,0 +1,120 @@
+# StoryCritic — overall architecture (Pocket FM Zero to One hackathon)
+direction: right
+
+classes: {
+  svc: {
+    style.fill: "#E3F2FD"
+    style.stroke: "#1976D2"
+  }
+  ext: {
+    shape: cloud
+    style.fill: "#F3E5F5"
+    style.stroke: "#7B1FA2"
+  }
+  store: {
+    shape: cylinder
+    style.fill: "#C8E6C9"
+    style.stroke: "#388E3C"
+  }
+  mirror: {
+    style.fill: "#FFF3E0"
+    style.stroke: "#EF6C00"
+    style.stroke-dash: 3
+  }
+}
+
+editor: Editorial Reviewer {
+  shape: person
+}
+
+ui: React UI :5173 {
+  class: svc
+  wizard: "Upload → Panel → Simulate → Verdict"
+  chat: Chat drawer (personas + report agent)
+}
+
+api: FastAPI Backend :8000 {
+  class: svc
+
+  routers: Routers {
+    ingest: ingest (F1)
+    panels: panels (F2)
+    runs: runs (F3/F4/F6)
+    chat: chat (F5)
+  }
+
+  etl: Preprocessing ETL {
+    text: text / pdf parse + byline strip
+    ffmpeg: ffmpeg audio extract (video)
+    rep: "story rep: beats/hooks/cliffhangers (schema gate FR-1.4)"
+  }
+
+  runner: Simulation Runner {
+    triage: triage mode (1 LLM pass)
+    full: full mode (swarm)
+    fallback: "full fails → auto-triage (NFR-6)"
+  }
+}
+
+sqlite: SQLite {
+  class: store
+  tables: "panels · submissions · runs · reports · personas · chat\n(NO author column — content-not-creator)"
+}
+
+openai: OpenAI API {
+  class: ext
+  uses: "beats extraction · triage verdict · transform · grounded chat"
+}
+
+eleven: ElevenLabs Scribe v2 {
+  class: ext
+  uses: Hindi ASR + diarization
+}
+
+mirofish: MiroFish :5001 (AGPL, vendored) {
+  class: svc
+
+  graph: GraphRAG ontology + graph build
+  personas: "persona generation (panel listeners embedded as entities)"
+  oasis: OASIS swarm simulation (CAMEL-AI)
+  report_agent: report agent (tool-using)
+  interview: interview API (live persona chat)
+}
+
+zep: Zep Cloud {
+  class: ext
+  uses: knowledge-graph memory
+}
+
+databricks: Databricks (sponsor mirror — never on demo path) {
+  class: mirror
+  volume: Unity Catalog Volume (raw blob) { class: store }
+  gold: "Delta gold: verdicts + dropoff_points" { class: store }
+  dash: SQL dashboard
+  volume -> gold: Jobs ETL (design lane)
+  gold -> dash
+}
+
+# main flow
+editor -> ui: upload story / pick panel
+ui -> api.routers: REST (vite proxy /api)
+api.routers.ingest -> api.etl
+api.etl.ffmpeg -> eleven: audio → transcript
+api.etl.rep -> openai: beats extraction
+api.etl -> sqlite: story rep (ready)
+api.routers.runs -> api.runner
+api.runner.triage -> openai: panel-conditioned verdict
+api.runner.full -> mirofish.graph: seed md (story + panel)
+mirofish.graph -> zep: entities/edges
+mirofish.personas -> mirofish.oasis
+mirofish.oasis -> mirofish.report_agent
+mirofish.report_agent -> api.runner: report + timeline
+api.runner -> openai: transform → verdict schema
+api.runner -> sqlite: report + personas
+api.routers.chat -> mirofish.interview: live (sim alive)
+api.routers.chat -> openai: fallback (stored event logs)
+sqlite -> ui: verdict · drop-off · segments · export
+
+# mirror lane (async, opt-in)
+api -> databricks.volume: raw (opt-in) {style.stroke-dash: 3}
+api.runner -> databricks.gold: verdict mirror {style.stroke-dash: 3}
