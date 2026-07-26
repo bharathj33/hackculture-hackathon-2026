@@ -44,6 +44,7 @@ def _run_summary_row(
         panel_id=run.panel_id,
         mode=run.mode,
         status=run.status,
+        stage=run.stage,
         cost_tokens=run.cost_tokens,
         error=run.error,
         started_at=run.started_at,

@@ -96,6 +96,7 @@ class RunOut(BaseModel):
     mode: str
     backtest: bool
     status: str  # loose on output — see SubmissionOut.status
+    stage: str | None = None  # pipeline stage while running
     cost_tokens: int
     error: str | None = None
     started_at: datetime | None = None
@@ -114,6 +115,7 @@ class RunSummaryOut(BaseModel):
     panel_id: str
     mode: str
     status: str
+    stage: str | None = None
     cost_tokens: int
     error: str | None = None
     started_at: datetime | None = None

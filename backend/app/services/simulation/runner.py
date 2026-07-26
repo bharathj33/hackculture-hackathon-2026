@@ -40,17 +40,25 @@ def execute_run_task(run_id: str) -> None:
 
         sub = db.get(Submission, run.submission_id)
         panel = db.get(Panel, run.panel_id)
+
+        def set_stage(stage: str | None) -> None:
+            run.stage = stage
+            db.commit()
+
         try:
             if run.mode == "triage":
+                set_stage("panel critique")
                 _run_triage(db, run, sub, panel)
             else:
                 try:
-                    _run_full(db, run, sub, panel)
+                    _run_full(db, run, sub, panel, set_stage)
                 except Exception:  # noqa: BLE001 — NFR-6: swarm failure degrades to triage
                     log.exception("full run failed — falling back to triage mode")
                     run.mode = "triage"
+                    set_stage("panel critique (fallback)")
                     _run_triage(db, run, sub, panel)
             run.status = "done"
+            run.stage = None
         except Exception as exc:  # noqa: BLE001
             log.exception("run failed")
             run.status = "failed"
@@ -118,7 +126,7 @@ def _run_triage(db, run: Run, sub: Submission, panel: Panel) -> None:
     _save_report(db, run, data)
 
 
-def _run_full(db, run: Run, sub: Submission, panel: Panel) -> None:
+def _run_full(db, run: Run, sub: Submission, panel: Panel, set_stage=None) -> None:
     """MiroFish swarm path (FR-3.1..3.4).
 
     TODO(hour 0-8 spike): confirm seed format; adapt story beats → event stream.
@@ -126,7 +134,7 @@ def _run_full(db, run: Run, sub: Submission, panel: Panel) -> None:
     """
     mf = MiroFishClient()
     try:
-        sim = mf.simulate(story_rep=sub.story_rep, panel_config=panel.config)
+        sim = mf.simulate(story_rep=sub.story_rep, panel_config=panel.config, on_stage=set_stage)
     finally:
         mf.http.close()  # per-run client; don't leak sockets across runs
 

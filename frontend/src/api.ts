@@ -216,6 +216,7 @@ export interface ApiRunSummary {
   panel_id: string
   mode: ApiRunMode
   status: string
+  stage: string | null
   cost_tokens: number
   error: string | null
   started_at: string | null

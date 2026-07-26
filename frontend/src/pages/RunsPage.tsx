@@ -29,6 +29,28 @@ const stamp = new Intl.DateTimeFormat('en-GB', {
   hour12: false,
 })
 
+/** In-flight badge: soft pulse + live dot, so "running" reads as activity, not a label. */
+function StatusBadge({ status, stage }: { status: string; stage?: string | null }) {
+  const variant = STATUS_VARIANT[status as keyof typeof STATUS_VARIANT] ?? 'muted'
+  const live = status === 'running' || status === 'queued'
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <Badge variant={variant} className={cn(live && 'animate-pulse')}>
+        {live && (
+          <span className="relative mr-1 flex size-2" aria-hidden="true">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60" />
+            <span className="relative inline-flex size-2 rounded-full bg-current" />
+          </span>
+        )}
+        {status}
+      </Badge>
+      {live && stage ? (
+        <span className="label-caps text-[10px] text-muted-foreground">{stage}</span>
+      ) : null}
+    </span>
+  )
+}
+
 const STATUS_VARIANT = {
   done: 'success',
   running: 'default',
@@ -56,8 +78,6 @@ function RunCard({
   onOpen: (runId: string) => void
 }) {
   const openable = run.status === 'done'
-  const statusVariant =
-    STATUS_VARIANT[run.status as keyof typeof STATUS_VARIANT] ?? 'muted'
   const label = runLabel(run)
 
   return (
@@ -107,7 +127,7 @@ function RunCard({
           <Badge variant={run.mode === 'full' ? 'secondary' : 'outline'}>
             {run.mode === 'full' ? 'Full swarm' : 'Triage'}
           </Badge>
-          <Badge variant={statusVariant}>{run.status}</Badge>
+          <StatusBadge status={run.status} stage={run.stage} />
         </div>
 
         <dl className="grid grid-cols-3 gap-3 text-xs">
@@ -219,8 +239,6 @@ export default function RunsPage() {
                 <TableBody>
                   {runs.map((run) => {
                     const openable = run.status === 'done'
-                    const statusVariant =
-                      STATUS_VARIANT[run.status as keyof typeof STATUS_VARIANT] ?? 'muted'
 
                     return (
                       <TableRow
@@ -258,7 +276,7 @@ export default function RunsPage() {
                         </TableCell>
 
                         <TableCell>
-                          <Badge variant={statusVariant}>{run.status}</Badge>
+                          <StatusBadge status={run.status} stage={run.stage} />
                         </TableCell>
 
                         <TableCell className="text-right">

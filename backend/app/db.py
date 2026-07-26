@@ -34,7 +34,7 @@ def init_db() -> None:
 # Columns added after the banked demo DB was created. create_all() only ever
 # CREATEs tables, so a pre-existing DB would otherwise boot missing them and
 # fail every SELECT on that table.
-_ADDED_COLUMNS = {"submissions": {"media_path": "VARCHAR(300)"}}
+_ADDED_COLUMNS = {"submissions": {"media_path": "VARCHAR(300)"}, "runs": {"stage": "VARCHAR(40)"}}
 
 
 def _add_missing_columns() -> None:

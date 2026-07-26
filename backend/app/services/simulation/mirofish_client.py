@@ -52,17 +52,26 @@ class MiroFishClient:
 
     # ---------- public ----------
 
-    def simulate(self, story_rep: dict, panel_config: dict, max_rounds: int = 6) -> dict:
-        """Full chain. Returns {personas, report, cost_tokens} in OUR schema."""
+    def simulate(self, story_rep: dict, panel_config: dict, max_rounds: int = 6, on_stage=None) -> dict:
+        """Full chain. Returns {personas, report, cost_tokens} in OUR schema.
+
+        on_stage: optional callback(str) fired at each chain boundary so the caller
+        can surface progress (persisted to Run.stage for the UI).
+        """
+        stage = on_stage or (lambda _s: None)
         seed_md = self._build_seed_markdown(story_rep, panel_config)
         requirement = self._build_requirement(panel_config)
 
+        stage("knowledge graph")
         project_id = self._ontology(seed_md, requirement)
         self._graph_build(project_id)
         sim_id = self._sim_create(project_id)
+        stage("casting personas")
         self._sim_prepare(sim_id)
+        stage("swarm rounds")
         self._sim_start(sim_id, max_rounds=max_rounds)
         self._wait_run(sim_id)
+        stage("compiling verdict")
         report_id = self._report_generate(sim_id)
         raw_report = self._get_report(report_id)
         timeline = self._get_timeline(sim_id)
