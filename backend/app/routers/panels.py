@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Panel
-from app.schemas import PanelIn, PanelOut
+from app.schemas import CastProfileOut, PanelIn, PanelOut
+from app.services.panel_cast import build_panel_cast
 
 router = APIRouter(prefix="/api/panels", tags=["panels"])
 
@@ -30,3 +31,12 @@ def get_panel(panel_id: str, db: Session = Depends(get_db)):
     if not panel:
         raise HTTPException(404, "panel not found")
     return panel
+
+
+@router.get("/{panel_id}/cast", response_model=list[CastProfileOut])
+def list_panel_cast(panel_id: str, db: Session = Depends(get_db)):
+    """Generic listener roster for a panel — who gets cast, not run outcomes."""
+    panel = db.get(Panel, panel_id)
+    if not panel:
+        raise HTTPException(404, "panel not found")
+    return build_panel_cast(panel.config)

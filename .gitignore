@@ -9,3 +9,9 @@ dist/
 __pycache__/
 *.vtt
 .keys
+data/
+assets/
+SPEC-*.md
+docs/*.md
+docs/*.json
+.railwayignore

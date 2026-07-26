@@ -12,6 +12,7 @@ import tempfile
 from app.config import get_settings
 from app.db import SessionLocal
 from app.models import Submission
+from app.services import media_store
 from app.services.preprocess.story_rep import build_story_rep
 
 log = logging.getLogger(__name__)
@@ -46,12 +47,20 @@ def transcribe(audio_bytes: bytes) -> str:
     return getattr(result, "text", str(result))
 
 
-def transcribe_task(submission_id: str, data: bytes, media_type: str) -> None:
+def transcribe_task(submission_id: str, data: bytes, media_type: str, suffix: str = "bin") -> None:
     db = SessionLocal()
     try:
         sub = db.get(Submission, submission_id)
         if not sub:
             return
+        # Store the upload before transcribing: transcription is lossy and one-shot,
+        # so a failed or improved run can only be replayed from the original media.
+        # Keyed by the upload's byte hash — content_hash is rewritten to the
+        # transcript hash below, which would otherwise orphan the blob.
+        path = media_store.put(sub.content_hash, suffix, data)
+        if path:
+            sub.media_path = path
+            db.commit()
         try:
             audio = extract_audio(data) if media_type == "video" else data
             text = transcribe(audio)

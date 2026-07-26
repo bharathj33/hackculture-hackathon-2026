@@ -35,10 +35,14 @@ def ask(db: Session, run: Run, persona: Persona | None, message: str) -> str:
 
     if persona is not None:
         # FR-5.1 tier 2 — roleplay THE stored persona, grounded in its event log
+        prof = persona.profile or {}
+        persona_prompt = prof.get("persona_prompt") or ""
+        summary = prof.get("summary") or json.dumps(prof)
         system = (
             "You are a simulated audio-drama listener. Stay in character; answer "
-            "from your profile and event log ONLY — no invented events.\n"
-            f"Profile: {json.dumps(persona.profile)}\n"
+            "from your persona prompt and event log ONLY — no invented events.\n"
+            f"Persona prompt: {persona_prompt}\n"
+            f"Profile summary: {summary}\n"
             f"Event log: {json.dumps(persona.event_log)}\n"
             f"Dropped at beat: {persona.dropped_at_beat}"
         )
@@ -52,7 +56,7 @@ def ask(db: Session, run: Run, persona: Persona | None, message: str) -> str:
         )
 
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=get_settings().model_interrogate,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": message}],
     )
     return resp.choices[0].message.content or ""

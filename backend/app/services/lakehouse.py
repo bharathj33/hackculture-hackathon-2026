@@ -5,6 +5,7 @@ Every function no-ops silently when DATABRICKS_HOST/TOKEN are unset or the SDK
 is missing. NFR-7 applies here too: rows carry content_hash, never any author
 identity.
 """
+import io
 import json
 import logging
 
@@ -30,25 +31,42 @@ def _client():
         return None
 
 
-def put_raw_file(content_hash: str, suffix: str, data: bytes) -> None:
+def put_raw_file(content_hash: str, suffix: str, data: bytes) -> str | None:
     """Mirror raw upload into Unity Catalog Volume (blob storage).
 
-    Opt-in via MIRROR_RAW_CONTENT=true — raw story content in the lakehouse would
-    outlive the local TTL purge (NFR-7), so default is metadata/verdicts only.
+    Returns the Volume path on success, else None (disabled, no creds, or failure) —
+    callers record it on the Submission so the blob can be found and purged later.
+
+    Opt-in via MIRROR_RAW_CONTENT=true. The stored blob is deleted by the same TTL
+    sweep that nulls raw_text, so it never outlives the transcript (NFR-7).
     """
     import os
 
     if os.getenv("MIRROR_RAW_CONTENT", "").lower() != "true":
-        return
+        return None
+    w = _client()
+    if not w:
+        return None
+    try:
+        path = f"/Volumes/{CATALOG}/raw/uploads/{content_hash}.{suffix}"
+        w.files.upload(path, io.BytesIO(data), overwrite=True)  # SDK needs a stream, not bytes
+        log.info("lakehouse: uploaded %s", path)
+        return path
+    except Exception:  # noqa: BLE001 — mirror must never break the demo path
+        log.exception("lakehouse upload failed (non-fatal)")
+        return None
+
+
+def delete_raw_file(path: str) -> None:
+    """Remove a mirrored upload (TTL purge, NFR-7)."""
     w = _client()
     if not w:
         return
     try:
-        path = f"/Volumes/{CATALOG}/raw/uploads/{content_hash}.{suffix}"
-        w.files.upload(path, data, overwrite=True)
-        log.info("lakehouse: uploaded %s", path)
-    except Exception:  # noqa: BLE001 — mirror must never break the demo path
-        log.exception("lakehouse upload failed (non-fatal)")
+        w.files.delete(path)
+        log.info("lakehouse: deleted %s", path)
+    except Exception:  # noqa: BLE001
+        log.exception("lakehouse delete failed (non-fatal)")
 
 
 def insert_row(table: str, row: dict) -> None:

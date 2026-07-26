@@ -17,12 +17,25 @@ log = logging.getLogger(__name__)
 
 _PROMPT = """You are a story-structure analyst for serialized audio drama.
 Split the story into sequential beats. For each beat give: idx, text_span (verbatim
-source excerpt, <=400 chars), summary (1 sentence), episode (int, default 1),
+source excerpt, <=400 chars), summary (1 sentence, ALWAYS in English for the editorial UI,
+even when the source text is Hindi or mixed), episode (int, default 1),
 is_hook (opens a question/promise), is_cliffhanger (ends on unresolved tension).
-Also list characters and language code.
+Also list characters and language code (BCP-47, e.g. hi, en).
 Return STRICT JSON matching:
 {"beats":[{"idx":0,"text_span":"...","summary":"...","episode":1,"is_hook":false,"is_cliffhanger":false}],
  "characters":["..."],"language":"hi"}"""
+
+
+_MOCK_SUMMARIES = [
+    "Meera opens the door at night and is startled by who she finds.",
+    "A warning on the doorstep — the tension holds for a twelve-minute block.",
+    "The mentor's role shifts; the strongest reversal in the arc lands here.",
+    "She runs without thinking — contradicting the freeze response established earlier.",
+    "Three days of silence; survivors of the last episode settle back in.",
+    "A long explanation beat — speed-listeners flag the dialogue as heavy.",
+    "The monetisation gate; conversion holds above the romance baseline.",
+    "The journal's age does not match — mystery listeners re-engage.",
+]
 
 
 def _mock_story_rep(text: str) -> StoryRep:
@@ -32,14 +45,14 @@ def _mock_story_rep(text: str) -> StoryRep:
         {
             "idx": i,
             "text_span": c[:400],
-            "summary": f"Beat {i}: " + c[:80].replace("\n", " "),
+            "summary": _MOCK_SUMMARIES[i % len(_MOCK_SUMMARIES)],
             "episode": 1 + i // 5,
             "is_hook": i % 4 == 0,
             "is_cliffhanger": (i + 1) % 5 == 0,
         }
         for i, c in enumerate(chunks)
     ]
-    return StoryRep(beats=beats, characters=["(mock) नायक", "(mock) खलनायक"], language="hi")
+    return StoryRep(beats=beats, characters=["Meera", "Arjun"], language="hi")
 
 
 def build_story_rep(text: str) -> StoryRep:
@@ -47,7 +60,7 @@ def build_story_rep(text: str) -> StoryRep:
         return _mock_story_rep(text)
     client = OpenAI(api_key=get_settings().openai_api_key)
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",  # cheap; upgrade if beat quality is weak
+        model=get_settings().model_beats,
         response_format={"type": "json_object"},
         messages=[{"role": "system", "content": _PROMPT}, {"role": "user", "content": text[:60_000]}],
     )

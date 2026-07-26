@@ -37,7 +37,7 @@ Full swarm mode additionally needs MiroFish running (`vendor/`, see `RUNBOOK.md`
 | Path | What |
 |---|---|
 | `backend/` | FastAPI — ingest, panels, runs, verdict, chat, export (`ARCHITECTURE.md` inside) |
-| `frontend/` | React wizard — upload → panel → verdict → persona chat |
+| `frontend/` | React dashboard — runs, verdict, beat timeline, personas, interrogation |
 | `backend/ETL-DATABRICKS.md` | Lakehouse pipeline design (Volumes/Delta/Jobs) |
 | `RUNBOOK.md` | Demo boot, pre-run checklist, 5-min script, failure drills |
 | `assets/` | Ep 02 Hindi transcript (demo input) |

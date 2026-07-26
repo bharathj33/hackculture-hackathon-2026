@@ -109,7 +109,7 @@ def _run_triage(db, run: Run, sub: Submission, panel: Panel) -> None:
         "fixes: [{priority, text, est_delta}]}"
     )
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=get_settings().model_triage,
         response_format={"type": "json_object"},
         messages=[{"role": "user", "content": prompt}],
     )

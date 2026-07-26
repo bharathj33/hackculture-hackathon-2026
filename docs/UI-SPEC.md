@@ -1,6 +1,6 @@
 # StoryCritic — Feature & Functionality Spec (UI open)
 
-Hand this to a designer/Claude session. **The screen structure, layout, and flow are yours to invent** — this doc defines what the product does, what data exists, and what must hold true. A 4-step wizard exists today as a reference implementation (`frontend/`), but do not treat it as the required shape.
+Hand this to a designer/Claude session. **The screen structure, layout, and flow are yours to invent** — this doc defines what the product does, what data exists, and what must hold true. The live client is the dashboard at `frontend/`.
 
 ## Product
 

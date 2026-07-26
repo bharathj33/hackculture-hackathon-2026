@@ -61,6 +61,17 @@ class PanelOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CastProfileOut(BaseModel):
+    """Generic cast member for a panel — not tied to any single run."""
+
+    id: str
+    handle: str
+    group_label: str
+    profile: str
+    persona_prompt: str
+    interests: list[str]
+
+
 # ---- F3: runs ----
 class RunIn(BaseModel):
     submission_id: str
@@ -78,8 +89,30 @@ class RunOut(BaseModel):
     status: str  # loose on output — see SubmissionOut.status
     cost_tokens: int
     error: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class RunSummaryOut(BaseModel):
+    """Run ledger row — joins report score and submission story metadata."""
+
+    id: str
+    submission_id: str
+    panel_id: str
+    mode: str
+    status: str
+    cost_tokens: int
+    error: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    score: float | None = None
+    persona_count: int
+    language: str
+    beat_count: int
+    story_label: str
+    panel_name: str
 
 
 # ---- F4: report ----
@@ -103,6 +136,16 @@ class Fix(BaseModel):
     est_delta: str  # directional, e.g. "+0.5-1.0 score with romance segment"
 
 
+class BeatEngagementOut(BaseModel):
+    beat_idx: int
+    posts: int = 0
+    comments: int = 0
+    reactions: int = 0
+    tweets: int = 0
+    agents_engaged: int = 0
+    silences: int = 0
+
+
 class ReportOut(BaseModel):
     run_id: str
     score: float
@@ -113,6 +156,7 @@ class ReportOut(BaseModel):
     segments: list[SegmentScore]
     fixes: list[Fix]
     confidence_note: str
+    beat_engagement: list[BeatEngagementOut] = []
 
     model_config = {"from_attributes": True}
 
@@ -134,6 +178,7 @@ class PersonaOut(BaseModel):
     id: str
     group_label: str
     profile: dict
+    event_log: list
     dropped_at_beat: int | None
 
     model_config = {"from_attributes": True}

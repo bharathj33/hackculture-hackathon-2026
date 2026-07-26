@@ -29,6 +29,7 @@ import httpx
 from openai import OpenAI
 
 from app.config import get_settings
+from app.services.listener_identity import build_panel_cast, seed_block
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ class MiroFishClient:
             raise MiroFishError(f"simulation {sim_id} produced no timeline — refusing ungrounded transform")
 
         report, personas, tokens = self._transform(story_rep, panel_config, raw_report, timeline, profiles)
+        personas = self._enrich_personas(personas, panel_config, profiles)
         return {"personas": personas, "report": report, "cost_tokens": tokens, "sim_id": sim_id}
 
     def chat_with_persona(self, sim_id: str, agent_id: int, message: str) -> str:
@@ -100,32 +102,8 @@ class MiroFishClient:
             parts.append(f"## Episode {b.get('episode', 1)} — Beat {b['idx']}{tag_s}\n{b['summary']}\n\n> {b['text_span']}\n")
 
         parts.append("\n# Listener Panel\n")
-        n = panel_config.get("persona_count", 20)
-        genres = panel_config.get("genre_affinities") or ["general"]
-        habits = panel_config.get("habits") or ["casual"]
-        market = panel_config.get("market", "IN")
-        lang = panel_config.get("language", "hi")
-        # Unique identities per listener — template-identical blocks get deduped/merged
-        # by graph entity extraction, collapsing the panel (adversarial review #4)
-        first_names = ["Asha", "Ravi", "Meena", "Kiran", "Divya", "Sanjay", "Pooja", "Amit",
-                       "Neha", "Vikram", "Lata", "Rohan", "Sunita", "Dev", "Priya", "Arjun",
-                       "Kavya", "Nikhil", "Rekha", "Suresh", "Tara", "Manoj", "Isha", "Gopal",
-                       "Zoya", "Harish", "Bina", "Yash", "Uma", "Farhan"]
-        cities = ["Indore", "Lucknow", "Patna", "Jaipur", "Nagpur", "Surat", "Kanpur", "Bhopal"]
-        for i in range(n):
-            name = f"{first_names[i % len(first_names)]}-L{i:02d}"
-            age = 18 + (i * 7) % 40
-            city = cities[i % len(cities)]
-            fav = genres[i % len(genres)]
-            habit = habits[i % len(habits)]
-            parts.append(
-                f"## Listener {name}\n{name}, {age}, lives in {city} (market {market}, "
-                f"language {lang}). Favorite genre: {fav}; listening habit: {habit}. "
-                f"{name} follows serialized audio dramas episode by episode and quits when "
-                f"bored, confused, or when a twist feels predictable.\n"
-            )
-        for arch in panel_config.get("critic_archetypes") or []:
-            parts.append(f"## Critic {arch}\nA professional {arch} evaluating the story (labeled critic, not audience).\n")
+        for entry in build_panel_cast(panel_config):
+            parts.append(seed_block(entry))
         return "\n".join(parts)
 
     @staticmethod
@@ -282,17 +260,51 @@ class MiroFishClient:
             "dropoff: [{beat_idx: int, retained_pct: float, cliff: bool, cause: str|null, paywall_risk: bool}], "
             "segments: [{group: str, score: float, n: int}], "
             "fixes: [{priority: int, text: str, est_delta: str}]}, "
-            "personas: [{group_label: str, profile: {name: str, agent_id: int|null, summary: str}, "
+            "personas: [{group_label: str, profile: {name: str, agent_id: int|null, summary: str, persona_prompt: str}, "
             "event_log: [{beat_idx: int, action: str, note: str}], dropped_at_beat: int|null}]}\n"
             "Ground every claim in the report/timeline; dropoff must cover all episodes; "
             "flag paywall_risk=true for cliffs in episodes 1-10."
         )
         resp = self._openai.chat.completions.create(
-            model="gpt-4o",
+            model=get_settings().model_transform,
             response_format={"type": "json_object"},
             messages=[{"role": "user", "content": prompt}],
         )
         data = json.loads(resp.choices[0].message.content)
         tokens = resp.usage.total_tokens if resp.usage else 0
-        # attach agent_ids from profiles where derivable (enables live interview)
         return data["report"], data["personas"], tokens
+
+    @staticmethod
+    def _enrich_personas(personas: list, panel_config: dict, profiles: list) -> list:
+        """Attach canonical persona_prompt + MiroFish agent_id from cast seed."""
+        from app.services.listener_identity import cast_by_handle
+
+        cast_map = cast_by_handle(panel_config)
+        agent_by_name: dict[str, int] = {}
+        for prof in profiles:
+            if not isinstance(prof, dict):
+                continue
+            name = (prof.get("name") or prof.get("handle") or prof.get("entity_name") or "").strip()
+            aid = prof.get("agent_id", prof.get("id"))
+            if name and aid is not None:
+                try:
+                    agent_by_name[name] = int(aid)
+                except (TypeError, ValueError):
+                    pass
+
+        for persona in personas:
+            profile = persona.setdefault("profile", {})
+            name = (profile.get("name") or "").strip()
+            cast = cast_map.get(name)
+            if cast:
+                profile.setdefault("summary", cast["profile"])
+                profile["persona_prompt"] = cast["persona_prompt"]
+            elif name:
+                for handle, entry in cast_map.items():
+                    if handle.lower() == name.lower():
+                        profile.setdefault("summary", entry["profile"])
+                        profile["persona_prompt"] = entry["persona_prompt"]
+                        break
+            if profile.get("agent_id") is None and name in agent_by_name:
+                profile["agent_id"] = agent_by_name[name]
+        return personas

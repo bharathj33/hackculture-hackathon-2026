@@ -5,10 +5,10 @@ import re
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from app.db import get_db
+from app.db import SessionLocal, get_db
 from app.models import Submission
 from app.schemas import IngestTextIn, SubmissionOut
-from app.services import lakehouse
+from app.services import media_store
 from app.services.preprocess import audio as audio_svc
 from app.services.preprocess import story_rep as rep_svc
 
@@ -23,6 +23,21 @@ _BYLINE = re.compile(
     r"^\s*(by|author|written by|writer|लेखक|द्वारा)\s*[:\-—]?\s+\S.*$",
     re.IGNORECASE,
 )
+
+
+def _store_text_task(submission_id: str, content_hash: str, data: bytes) -> None:
+    """Mirror a text upload to the Volume and record its path for later purge."""
+    path = media_store.put(content_hash, "txt", data)
+    if not path:
+        return
+    db = SessionLocal()
+    try:
+        sub = db.get(Submission, submission_id)
+        if sub:
+            sub.media_path = path
+            db.commit()
+    finally:
+        db.close()
 
 
 def _strip_bylines(text: str) -> str:
@@ -41,7 +56,7 @@ def ingest_text(body: IngestTextIn, bg: BackgroundTasks, db: Session = Depends(g
     db.commit()
     db.refresh(sub)
     bg.add_task(rep_svc.build_story_rep_task, sub.id)
-    bg.add_task(lakehouse.put_raw_file, sub.content_hash, "txt", clean.encode())  # sponsor mirror (opt-in)
+    bg.add_task(_store_text_task, sub.id, sub.content_hash, clean.encode())  # opt-in mirror
     return sub
 
 
@@ -70,7 +85,7 @@ async def ingest_file(file: UploadFile, bg: BackgroundTasks, db: Session = Depen
         db.add(sub)
         db.commit()
         db.refresh(sub)
-        bg.add_task(audio_svc.transcribe_task, sub.id, data, media_type)
+        bg.add_task(audio_svc.transcribe_task, sub.id, data, media_type, suffix)
         return sub
 
     raise HTTPException(415, f"unsupported type: {suffix}")

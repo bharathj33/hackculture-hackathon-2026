@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./storycritic.db"
     content_ttl_minutes: int = 120  # NFR-7: session-scoped raw content
     demo_mock: bool = False  # keyless E2E rehearsal: deterministic story-rep + canned verdict
+    # Model per stage. Split because the stages have different jobs: beat-splitting and
+    # triage are high-volume and cheap, the swarm transform is the one that has to hold
+    # a whole timeline in context and not fabricate. Override per stage to A/B a model
+    # without touching code.
+    model_beats: str = "gpt-4o-mini"
+    model_triage: str = "gpt-4o-mini"
+    model_transform: str = "gpt-4o"
+    model_interrogate: str = "gpt-4o-mini"
     # Editor JWT auth (public hosting). Empty jwt_secret (default) = auth DISABLED —
     # local dev and tests run fully open; set a strong secret in production.
     jwt_secret: str = ""

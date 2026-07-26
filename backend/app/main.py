@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from fastapi import Depends, FastAPI
+from sqlalchemy import or_
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth import require_editor
@@ -12,12 +13,24 @@ from app.config import get_settings
 from app.db import SessionLocal, init_db
 from app.models import Editor, Panel, Submission
 from app.routers import auth, chat, ingest, panels, runs
+from app.services import media_store
 
 logging.basicConfig(level=logging.INFO)
 
 # FR-2.1 preset panels — [ASSUMPTION Q2: archetypes to be confirmed with Pocket FM mentor]
 PRESET_PANELS = [
-    ("Tier-2 Hindi romance binge-listener", {"persona_count": 20, "market": "IN", "language": "hi", "genre_affinities": ["romance", "drama"], "habits": ["binge", "daily-commute"], "critic_archetypes": []}),
+    (
+        "Tier-2 Hindi romance binge-listener",
+        {
+            "persona_count": 16,
+            "market": "IN",
+            "language": "hi",
+            "genre_affinities": ["romance", "drama"],
+            # One habit per listener so cast groups match demo archetypeMix (7/6/3 + 2 critics).
+            "habits": ["binge"] * 7 + ["daily-commute"] * 6 + ["completionist"] * 3,
+            "critic_archetypes": ["Story editor", "Pacing analyst"],
+        },
+    ),
     ("US thriller commuter", {"persona_count": 20, "market": "US", "language": "en", "genre_affinities": ["thriller", "action"], "habits": ["commute", "sampler"], "critic_archetypes": []}),
     ("Genre superfan", {"persona_count": 15, "market": "IN", "language": "hi", "genre_affinities": ["fantasy", "epic"], "habits": ["completionist"], "critic_archetypes": []}),
     ("Casual sampler", {"persona_count": 15, "market": "IN", "language": "hi", "genre_affinities": [], "habits": ["free-episodes-only", "low-patience"], "critic_archetypes": []}),
@@ -25,12 +38,16 @@ PRESET_PANELS = [
 
 
 def seed_presets() -> None:
+    """Insert preset panels on first boot; upsert config on later boots so cast stays canonical."""
     db = SessionLocal()
     try:
-        if db.query(Panel).filter(Panel.is_preset).count() == 0:
-            for name, config in PRESET_PANELS:
+        for name, config in PRESET_PANELS:
+            panel = db.query(Panel).filter(Panel.name == name, Panel.is_preset).first()
+            if panel is None:
                 db.add(Panel(name=name, config=config, is_preset=True))
-            db.commit()
+            else:
+                panel.config = config
+        db.commit()
     finally:
         db.close()
 
@@ -63,19 +80,25 @@ def seed_editors() -> None:
 
 
 def purge_expired_content() -> None:
-    """NFR-7: raw story content is session-scoped — null it past TTL.
+    """NFR-7: raw story content is session-scoped — drop it past TTL.
 
-    Reports/runs/personas survive (keyed by content_hash); raw text does not.
+    Reports/runs/personas survive (keyed by content_hash); raw text and the
+    mirrored upload do not. Purging both together is what keeps "content is
+    session-scoped" true once uploads are stored in the Volume.
     """
     ttl = get_settings().content_ttl_minutes
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=ttl)
     db = SessionLocal()
     try:
         expired = db.query(Submission).filter(
-            Submission.created_at < cutoff, Submission.raw_text.isnot(None)
+            Submission.created_at < cutoff,
+            or_(Submission.raw_text.isnot(None), Submission.media_path.isnot(None)),
         )
         for sub in expired:
             sub.raw_text = None
+            if sub.media_path:
+                media_store.delete(sub.media_path)
+                sub.media_path = None
         db.commit()
     finally:
         db.close()

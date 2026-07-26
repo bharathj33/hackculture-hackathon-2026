@@ -54,6 +54,18 @@ def test_presets_seeded(client):
     assert all(p["is_preset"] for p in panels[:4])
 
 
+def test_tier2_panel_cast_has_18_profiles(client):
+    panels = client.get("/api/panels").json()
+    tier2 = next(p for p in panels if "Tier-2 Hindi" in p["name"])
+    cast = client.get(f"/api/panels/{tier2['id']}/cast").json()
+    assert len(cast) == 18
+    groups = {entry["group_label"] for entry in cast}
+    assert "Critic" in groups
+    assert sum(1 for entry in cast if entry["group_label"] == "Critic") == 2
+    for entry in cast:
+        assert entry.get("persona_prompt"), f"missing persona_prompt for {entry['handle']}"
+        assert len(entry["persona_prompt"]) > 40
+
 def test_ingest_builds_story_rep(client):
     sub = _ingest(client)
     assert sub["status"] == "ready"
@@ -67,6 +79,30 @@ def test_byline_stripped(client):
     assert "Ramesh" not in joined  # FR-1.5
 
 
+def test_list_runs(client):
+    sub = _ingest(client)
+    run = _run(client, sub)
+    rows = client.get("/api/runs").json()
+    assert isinstance(rows, list)
+    assert len(rows) >= 1
+    match = next(r for r in rows if r["id"] == run["id"])
+    assert match["status"] == "done"
+    assert match["submission_id"] == sub["id"]
+    assert match["panel_id"] == run["panel_id"]
+    assert match["mode"] == run["mode"]
+    assert match["score"] is not None
+    assert 0 <= match["score"] <= 10
+    assert 5 <= match["persona_count"] <= 50
+    assert match["beat_count"] == len(sub["story_rep"]["beats"])
+    assert match["language"] == sub["story_rep"]["language"]
+    assert match["story_label"]
+    assert match["panel_name"]
+    assert match["started_at"] is not None
+    assert match["finished_at"] is not None
+    started = [r["started_at"] for r in rows if r["started_at"]]
+    assert started == sorted(started, reverse=True)
+
+
 def test_full_run_and_report(client):
     sub = _ingest(client)
     run = _run(client, sub)
@@ -75,6 +111,9 @@ def test_full_run_and_report(client):
     assert 0 <= rep["score"] <= 10
     assert rep["dropoff"] and rep["segments"] and rep["fixes"]
     assert rep["confidence_note"]  # FR-6.2: always present
+    assert rep["beat_engagement"]
+    assert len(rep["beat_engagement"]) == len(rep["dropoff"])
+    assert "posts" in rep["beat_engagement"][0]
 
 
 def test_export_packet(client):

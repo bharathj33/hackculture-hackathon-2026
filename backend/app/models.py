@@ -53,6 +53,9 @@ class Submission(Base):
     status: Mapped[str] = mapped_column(String(20), default="processing")  # processing|ready|failed
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)  # session-scoped, TTL-purged
     story_rep: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # FR-1.4 schema
+    # Unity Catalog Volume path of the stored upload; None when mirroring is off.
+    # TTL-purged alongside raw_text so the blob never outlives the transcript (NFR-7).
+    media_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
