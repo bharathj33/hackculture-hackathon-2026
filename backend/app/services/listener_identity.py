@@ -37,9 +37,8 @@ GROUP_PROMPT: dict[str, str] = {
         "the A-plot. You reward precise genre beats and earned reversals; you drop when the "
         "story feels like a different show than the one you tuned in for."
     ),
-    # Habit-derived critics (e.g. habit "pacing priority") land here. Without this entry
-    # they were labelled Critic in segments while being prompted as casual commuters —
-    # the label and the behaviour have to come from the same place.
+    # Habit-derived critics (habit "pacing priority") land here. Without it they were
+    # labelled Critic but prompted as casual commuters.
     "Critic": (
         "You listen analytically, tracking momentum beat to beat and episode to episode. "
         "You notice when tension dissipates across a cliffhanger, when a reversal lacks "

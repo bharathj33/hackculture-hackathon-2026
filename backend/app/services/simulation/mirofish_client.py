@@ -207,8 +207,14 @@ class MiroFishClient:
         report_id = data["report_id"]
         if data.get("already_generated"):
             return report_id
+        # simulation_id alone only answers once a COMPLETED report exists; while the task
+        # is still running the endpoint requires task_id and 400s without it. Send both:
+        # task_id drives the poll, simulation_id short-circuits an already-finished report.
+        status_body = {"simulation_id": sim_id}
+        if data.get("task_id"):
+            status_body["task_id"] = data["task_id"]
         s = self._poll(
-            lambda: self._ok(self.http.post("/api/report/generate/status", json={"simulation_id": sim_id})),
+            lambda: self._ok(self.http.post("/api/report/generate/status", json=status_body)),
             done=lambda s: s.get("status") == "completed" or s.get("already_completed"),
             failed=lambda s: s.get("status") == "failed",
             every=8,

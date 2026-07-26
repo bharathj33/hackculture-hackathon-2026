@@ -4,5 +4,9 @@ env:
     valueFrom: openai_key
   - name: ELEVENLABS_API_KEY
     valueFrom: elevenlabs_key
+  - name: JWT_SECRET
+    valueFrom: jwt_secret
+  - name: AUTH_USERS
+    valueFrom: auth_users
   - name: CONTENT_TTL_MINUTES
     value: "480"
