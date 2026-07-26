@@ -1,8 +1,8 @@
 """Pydantic request/response schemas (API contract)."""
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator, Field
 
 
 # ---- F1: ingest ----
@@ -80,6 +80,15 @@ class RunIn(BaseModel):
     backtest: bool = False  # F6
 
 
+def _utc_stamp(v: datetime | None) -> datetime | None:
+    """Run timestamps are written as UTC but stored naive (SQLite/Postgres strip
+    tzinfo). Serialized without an offset, the frontend reads them as local time
+    and shifts them again — mark them UTC on the way out."""
+    if v is not None and v.tzinfo is None:
+        return v.replace(tzinfo=UTC)
+    return v
+
+
 class RunOut(BaseModel):
     id: str
     submission_id: str
@@ -91,6 +100,8 @@ class RunOut(BaseModel):
     error: str | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
+
+    _stamp_tz = field_validator("started_at", "finished_at")(_utc_stamp)
 
     model_config = {"from_attributes": True}
 
@@ -111,8 +122,11 @@ class RunSummaryOut(BaseModel):
     persona_count: int
     language: str
     beat_count: int
+
     story_label: str
     panel_name: str
+
+    _stamp_tz = field_validator("started_at", "finished_at")(_utc_stamp)
 
 
 # ---- F4: report ----
