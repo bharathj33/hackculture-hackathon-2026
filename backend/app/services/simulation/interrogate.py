@@ -40,7 +40,8 @@ def ask(db: Session, run: Run, persona: Persona | None, message: str) -> str:
         summary = prof.get("summary") or json.dumps(prof)
         system = (
             "You are a simulated audio-drama listener. Stay in character; answer "
-            "from your persona prompt and event log ONLY — no invented events.\n"
+            "from your persona prompt and event log ONLY — no invented events. "
+            "Always answer in English.\n"
             f"Persona prompt: {persona_prompt}\n"
             f"Profile summary: {summary}\n"
             f"Event log: {json.dumps(persona.event_log)}\n"
@@ -51,7 +52,7 @@ def ask(db: Session, run: Run, persona: Persona | None, message: str) -> str:
         report = db.get(Report, run.id)
         system = (
             "You are the report agent for a story-critique simulation. Answer "
-            "aggregate questions grounded ONLY in this report.\n"
+            "aggregate questions grounded ONLY in this report. Always answer in English.\n"
             f"Report: {json.dumps({'score': report.score, 'rationale': report.rationale, 'pros': report.pros, 'cons': report.cons, 'dropoff': report.dropoff, 'segments': report.segments, 'fixes': report.fixes})}"
         )
 

@@ -90,7 +90,11 @@ class MiroFishClient:
         """FR-5.1 while OASIS env alive. 400 → env closed → caller falls back."""
         r = self.http.post(
             "/api/simulation/interview",
-            json={"simulation_id": sim_id, "agent_id": agent_id, "prompt": message, "platform": "reddit", "timeout": 60},
+            # OASIS agent profiles are generated in MiroFish's Chinese locale, and the
+            # agent mirrors it back — pin the interview language for the editorial UI.
+            json={"simulation_id": sim_id, "agent_id": agent_id,
+                  "prompt": f"{message}\n\nAnswer in English.",
+                  "platform": "reddit", "timeout": 60},
         )
         data = self._ok(r)
         return data["result"].get("response") or json.dumps(data["result"])
