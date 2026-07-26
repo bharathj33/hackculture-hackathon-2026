@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Loader2, Lock, LogIn, User } from 'lucide-react'
+import { BarChart3, Eye, EyeOff, Loader2, Lock, LogIn, User } from 'lucide-react'
 
-import { AuthDisabledError, login, UnauthorizedError } from '@/api'
+import { AuthDisabledError, login, setToken, UnauthorizedError } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -26,13 +26,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     setReady(true)
-    // Testing: skip login until auth is wired at the end.
-    navigate(redirectTo, { replace: true })
-  }, [navigate, redirectTo])
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -44,6 +43,9 @@ export default function LoginPage() {
       navigate(redirectTo)
     } catch (err) {
       if (err instanceof AuthDisabledError) {
+        // Local dev: backend 503s with no JWT_SECRET and gates nothing. RequireAuth
+        // only checks token presence, so store a sentinel the open backend ignores.
+        setToken('auth-disabled')
         navigate(redirectTo)
       } else if (err instanceof UnauthorizedError) {
         setError('Invalid username or password.')
@@ -84,14 +86,18 @@ export default function LoginPage() {
             ready ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
           }`}
         >
-          <header className="flex items-center gap-3 pb-10">
-            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
-              <BarChart3 className="size-5" strokeWidth={2} aria-hidden="true" />
+          <header className="flex flex-col items-center pb-10 text-center">
+            <p className="font-mono text-base font-bold tracking-[0.18em] uppercase">
+              <span className="text-primary">Team {TEAM.name}</span>
+            </p>
+            <p className="pt-1 font-mono text-sm font-semibold tracking-[0.22em] text-muted-foreground uppercase">
+              {TEAM.event} Hackathon
+            </p>
+            <span className="mt-6 inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground shadow-sm">
+              <BarChart3 className="size-6" strokeWidth={2} aria-hidden="true" />
             </span>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">StoryCritic</h1>
-              <p className="label-caps pt-1 text-muted-foreground">Editorial Intelligence</p>
-            </div>
+            <h1 className="pt-3 text-3xl font-semibold tracking-tight">StoryCritic</h1>
+            <p className="label-caps pt-1.5 text-muted-foreground">Editorial Intelligence</p>
           </header>
 
           <Card className="relative gap-0 pt-11 pb-7">
@@ -123,13 +129,25 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`peer ${FIELD_CLASS}`}
+                      className={`peer ${FIELD_CLASS} pr-10`}
                     />
                     <Lock className={ICON_CLASS} aria-hidden="true" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="size-4" aria-hidden="true" />
+                      ) : (
+                        <Eye className="size-4" aria-hidden="true" />
+                      )}
+                    </button>
                   </div>
                 </div>
 
