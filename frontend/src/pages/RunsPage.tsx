@@ -43,8 +43,31 @@ const STAGE_ETA: Record<string, string> = {
   'panel critique (fallback)': '~1 min left',
 }
 
+/** "18m 04s" / "1h 02m" / "42s" from the run's own timestamps. */
+function runDuration(startedAt?: string | null, finishedAt?: string | null): string | null {
+  if (!startedAt || !finishedAt) return null
+  const ms = Date.parse(finishedAt) - Date.parse(startedAt)
+  if (!Number.isFinite(ms) || ms <= 0) return null
+  const s = Math.round(ms / 1000)
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m ${String(s % 60).padStart(2, '0')}s`
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`
+}
+
 /** In-flight badge: soft pulse + live dot, so "running" reads as activity, not a label. */
-function StatusBadge({ status, stage }: { status: string; stage?: string | null }) {
+function StatusBadge({
+  status,
+  stage,
+  startedAt,
+  finishedAt,
+}: {
+  status: string
+  stage?: string | null
+  startedAt?: string | null
+  finishedAt?: string | null
+}) {
+  const took = runDuration(startedAt, finishedAt)
   const variant = STATUS_VARIANT[status as keyof typeof STATUS_VARIANT] ?? 'muted'
   const live = status === 'running' || status === 'queued'
   return (
@@ -63,6 +86,9 @@ function StatusBadge({ status, stage }: { status: string; stage?: string | null 
           {stage}
           {STAGE_ETA[stage] ? ` · ${STAGE_ETA[stage]}` : ''}
         </span>
+      ) : null}
+      {!live && took ? (
+        <span className="label-caps text-[10px] text-muted-foreground">took {took}</span>
       ) : null}
     </span>
   )
@@ -144,7 +170,7 @@ function RunCard({
           <Badge variant={run.mode === 'full' ? 'secondary' : 'outline'}>
             {run.mode === 'full' ? 'Full swarm' : 'Triage'}
           </Badge>
-          <StatusBadge status={run.status} stage={run.stage} />
+          <StatusBadge status={run.status} stage={run.stage} startedAt={run.started_at} finishedAt={run.finished_at} />
         </div>
 
         <dl className="grid grid-cols-3 gap-3 text-xs">
@@ -293,7 +319,7 @@ export default function RunsPage() {
                         </TableCell>
 
                         <TableCell>
-                          <StatusBadge status={run.status} stage={run.stage} />
+                          <StatusBadge status={run.status} stage={run.stage} startedAt={run.started_at} finishedAt={run.finished_at} />
                         </TableCell>
 
                         <TableCell className="text-right">
